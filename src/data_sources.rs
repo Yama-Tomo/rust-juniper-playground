@@ -92,6 +92,7 @@ impl Database {
             .map(|p| Post {
                 id: p.id,
                 title: p.title.to_string(),
+                user_id: p.user_id,
             })
             .collect::<Vec<Post>>();
 
