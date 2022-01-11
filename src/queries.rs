@@ -1,7 +1,7 @@
 use juniper::graphql_object;
 
 use crate::context::Context;
-use crate::objects::User;
+use crate::objects::{Post, User};
 
 pub struct Query;
 #[graphql_object(context = Context)]
@@ -16,6 +16,10 @@ impl Query {
 
     fn users(context: &Context) -> Option<Vec<User>> {
         context.db.get_users()
+    }
+
+    fn posts(context: &Context) -> Option<Vec<Post>> {
+        context.db.get_posts()
     }
 
     fn hello() -> &str {
