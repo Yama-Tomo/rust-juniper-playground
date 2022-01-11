@@ -53,6 +53,10 @@ impl Database {
     pub fn get_user(&self, id: &i32) -> Option<&User> {
         self.users.get(id)
     }
+
+    pub fn get_users(&self) -> Option<Vec<&User>> {
+        Some(self.users.values().collect::<Vec<&User>>())
+    }
 }
 
 struct Context {
@@ -73,6 +77,10 @@ impl Query {
         #[graphql(description = "id of the user")] id: i32,
     ) -> Option<&User> {
         context.db.get_user(&id)
+    }
+
+    fn users(context: &Context) -> Option<Vec<&User>> {
+        context.db.get_users()
     }
 
     fn hello() -> &str {
