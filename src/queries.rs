@@ -10,14 +10,11 @@ impl Query {
         "1.0"
     }
 
-    fn user(
-        context: &Context,
-        #[graphql(description = "id of the user")] id: i32,
-    ) -> Option<&User> {
+    fn user(context: &Context, #[graphql(description = "id of the user")] id: i32) -> Option<User> {
         context.db.get_user(&id)
     }
 
-    fn users(context: &Context) -> Option<Vec<&User>> {
+    fn users(context: &Context) -> Option<Vec<User>> {
         context.db.get_users()
     }
 
