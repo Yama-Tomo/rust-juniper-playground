@@ -1,12 +1,7 @@
-use juniper::{graphql_object, GraphQLObject};
+use juniper::graphql_object;
 
+use super::User;
 use crate::context::Context;
-
-#[derive(Clone, GraphQLObject)]
-pub struct User {
-    pub id: i32,
-    pub name: String,
-}
 
 #[derive(Clone)]
 pub struct Post {

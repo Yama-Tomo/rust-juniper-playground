@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::objects::{Post, User};
+use crate::resolvers::objects::*;
 
 struct DbUser {
     pub id: i32,

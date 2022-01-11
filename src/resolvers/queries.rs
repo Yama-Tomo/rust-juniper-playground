@@ -1,7 +1,7 @@
 use juniper::graphql_object;
 
 use crate::context::Context;
-use crate::objects::{Post, User};
+use crate::resolvers::objects::*;
 
 pub struct Query;
 #[graphql_object(context = Context)]
