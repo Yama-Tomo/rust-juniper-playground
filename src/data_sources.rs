@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use crate::resolvers::objects::*;
 
-struct DbUser {
+pub struct DbUser {
     pub id: i32,
     pub name: String,
 }
 
-struct DbPost {
+pub struct DbPost {
     pub id: i32,
     pub user_id: i32,
     pub title: String,
@@ -64,10 +64,7 @@ impl Database {
     pub fn get_user(&self, id: &i32) -> Option<User> {
         let user = self.users.get(id);
         match user {
-            Some(u) => Some(User {
-                id: u.id,
-                name: u.name.to_string(),
-            }),
+            Some(u) => Some(User { data: u }),
             None => None,
         }
     }
@@ -76,10 +73,7 @@ impl Database {
         let users = self
             .users
             .values()
-            .map(|u| User {
-                id: u.id,
-                name: u.name.to_string(),
-            })
+            .map(|u| User { data: u })
             .collect::<Vec<User>>();
 
         Some(users)
@@ -89,11 +83,7 @@ impl Database {
         let posts = self
             .posts
             .values()
-            .map(|p| Post {
-                id: p.id,
-                title: p.title.to_string(),
-                user_id: p.user_id,
-            })
+            .map(|p| Post { data: p })
             .collect::<Vec<Post>>();
 
         Some(posts)
