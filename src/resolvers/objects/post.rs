@@ -19,6 +19,6 @@ impl<'a> Post<'a> {
     }
 
     fn user<'c>(&self, context: &'c Context) -> Option<User<'c>> {
-        context.db.get_user(&self.data.user_id)
+        context.datasources.get_user(&self.data.user_id)
     }
 }

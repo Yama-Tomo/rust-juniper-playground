@@ -16,12 +16,12 @@ pub struct DbPost {
 type DbUsers = HashMap<i32, DbUser>;
 type DbPosts = HashMap<i32, DbPost>;
 #[derive(Default)]
-pub struct Database {
+pub struct DataSources {
     users: DbUsers,
     posts: DbPosts,
 }
-impl Database {
-    pub fn new() -> Database {
+impl DataSources {
+    pub fn new() -> DataSources {
         let mut users: DbUsers = HashMap::new();
         let items = ["Aron", "Bea", "carl", "Dora"];
 
@@ -58,7 +58,7 @@ impl Database {
         insert_post(4, 2);
         insert_post(4, 3);
 
-        Database { users, posts }
+        DataSources { users, posts }
     }
 
     pub fn get_user(&self, id: &i32) -> Option<User> {
