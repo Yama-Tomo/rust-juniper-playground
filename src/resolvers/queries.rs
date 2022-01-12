@@ -22,7 +22,7 @@ impl Query {
         context.db.get_posts()
     }
 
-    fn hello() -> &str {
+    fn hello() -> &'static str {
         "hello world!"
     }
 }
