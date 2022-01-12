@@ -4,6 +4,7 @@ use super::User;
 use crate::context::Context;
 use crate::data_sources::DbPost;
 
+#[derive(Clone)]
 pub struct Post {
     pub data: DbPost,
 }

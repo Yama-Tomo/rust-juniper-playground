@@ -2,6 +2,7 @@ use juniper::graphql_object;
 
 use crate::context::Context;
 use crate::data_sources::DbUser;
+use crate::resolvers::objects::Post;
 
 #[derive(Clone)]
 pub struct User {
@@ -16,5 +17,9 @@ impl User {
 
     pub fn name(&self) -> &String {
         &self.data.name
+    }
+
+    pub async fn posts(&self, context: &Context) -> Vec<Post> {
+        context.datasources.get_post_by_user_id(self.data.id).await
     }
 }
