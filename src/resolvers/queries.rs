@@ -10,8 +10,11 @@ impl Query {
         "1.0"
     }
 
-    fn user(context: &Context, #[graphql(description = "id of the user")] id: i32) -> Option<User> {
-        context.datasources.get_user(&id)
+    async fn user(
+        context: &Context,
+        #[graphql(description = "id of the user")] id: i32,
+    ) -> Option<User> {
+        context.datasources.get_user(id).await
     }
 
     fn users(context: &Context) -> Option<Vec<User>> {

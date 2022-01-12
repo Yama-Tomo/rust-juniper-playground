@@ -4,12 +4,12 @@ use super::User;
 use crate::context::Context;
 use crate::data_sources::DbPost;
 
-pub struct Post<'a> {
-    pub data: &'a DbPost,
+pub struct Post {
+    pub data: DbPost,
 }
 
 #[graphql_object(context = Context)]
-impl<'a> Post<'a> {
+impl Post {
     pub fn id(&self) -> &i32 {
         &self.data.id
     }
@@ -18,7 +18,7 @@ impl<'a> Post<'a> {
         &self.data.title
     }
 
-    fn user<'c>(&self, context: &'c Context) -> Option<User<'c>> {
-        context.datasources.get_user(&self.data.user_id)
+    async fn user(&self, context: &Context) -> Option<User> {
+        context.datasources.get_user(self.data.user_id).await
     }
 }

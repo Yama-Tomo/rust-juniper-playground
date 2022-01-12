@@ -10,3 +10,6 @@ actix-web = "4.0.0-beta.8"
 actix-rt = "2"
 juniper = { git = "https://github.com/graphql-rust/juniper.git", rev="c866e09" }
 juniper_actix = { git = "https://github.com/graphql-rust/juniper.git", rev="c866e09" }
+dataloader = "0.14.0"
+async-trait = "0.1.52"
+
