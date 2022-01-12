@@ -27,7 +27,7 @@ async fn graphql_route(
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
-            .data(schema::create())
+            .app_data(schema::create())
             .route("/", web::get().to(index))
             .service(
                 web::resource("/graphql")
