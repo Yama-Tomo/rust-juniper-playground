@@ -87,7 +87,7 @@ impl DataSources {
         Some(users)
     }
 
-    pub async fn get_post_by_user_id(&self, id: i32) -> Vec<Post> {
+    pub async fn get_posts_by_user_id(&self, id: i32) -> Vec<Post> {
         self.post_loader.load(id).await
     }
 
