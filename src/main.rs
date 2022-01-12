@@ -1,4 +1,7 @@
-use actix_web::{web, App, Error, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    web::{self, Data},
+    App, Error, HttpResponse, HttpServer, Responder,
+};
 use juniper_actix::{graphql_handler, playground_handler};
 
 mod context;
@@ -27,7 +30,7 @@ async fn graphql_route(
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
-            .app_data(schema::create())
+            .app_data(Data::new(schema::create()))
             .route("/", web::get().to(index))
             .service(
                 web::resource("/graphql")
