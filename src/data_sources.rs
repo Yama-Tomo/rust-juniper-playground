@@ -147,7 +147,7 @@ impl BatchFn<i32, Vec<Post>> for PostLoader {
         let fetch_data = self
             .posts
             .values()
-            .filter(|i| keys.contains(&i.id))
+            .filter(|i| keys.contains(&i.user_id))
             .collect::<Vec<&DbPost>>();
 
         for key in keys {
