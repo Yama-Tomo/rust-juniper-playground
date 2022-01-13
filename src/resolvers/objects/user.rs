@@ -20,7 +20,11 @@ impl User {
     }
 
     pub async fn posts(&self, context: &Context) -> Vec<Post> {
-        context.datasources.get_posts_by_user_id(self.data.id).await
+        context
+            .datasources
+            .post
+            .get_posts_by_user_id(self.data.id)
+            .await
     }
 }
 

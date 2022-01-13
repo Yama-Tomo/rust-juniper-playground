@@ -20,7 +20,7 @@ impl Post {
     }
 
     async fn user(&self, context: &Context) -> Option<User> {
-        context.datasources.get_user(self.data.user_id).await
+        context.datasources.user.get_user(self.data.user_id).await
     }
 }
 
