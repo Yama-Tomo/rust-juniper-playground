@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 use crate::resolvers::objects::*;
 
@@ -21,55 +23,63 @@ pub struct DbPost {
 type DbUsers = HashMap<i32, DbUser>;
 type DbPosts = HashMap<i32, DbPost>;
 
+// TODO: RDBMSを使うようになったらonce_cellもアンインストール
+static DB_USERS: Lazy<Mutex<DbUsers>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static DB_POSTS: Lazy<Mutex<DbPosts>> = Lazy::new(|| Mutex::new(HashMap::new()));
+pub fn init_data() -> () {
+    if DB_USERS.lock().unwrap().len() > 0 {
+        return;
+    }
+
+    let items = ["Aron", "Bea", "carl", "Dora"];
+
+    for (i, item) in items.iter().enumerate() {
+        let id = i as i32 + 1;
+        DB_USERS.lock().unwrap().insert(
+            id,
+            DbUser {
+                id,
+                name: item.to_string(),
+            },
+        );
+    }
+
+    let mut id = 0;
+    let mut insert_post = |user_id: i32, vol: i32| -> () {
+        id = id + 1;
+        DB_POSTS.lock().unwrap().insert(
+            id,
+            DbPost {
+                id,
+                user_id,
+                title: format!(
+                    "{} vol:{}",
+                    DB_USERS.lock().unwrap().get(&user_id).unwrap().name,
+                    vol
+                ),
+            },
+        );
+    };
+
+    insert_post(1, 1);
+    insert_post(1, 2);
+    insert_post(3, 1);
+    insert_post(4, 1);
+    insert_post(4, 2);
+    insert_post(4, 3);
+}
+
 pub struct DataSources {
-    users: DbUsers,
     user_loader: UserLoaderType,
-    posts: DbPosts,
     post_loader: PostLoaderType,
 }
 impl DataSources {
     pub fn new() -> DataSources {
-        let mut users: DbUsers = HashMap::new();
-        let items = ["Aron", "Bea", "carl", "Dora"];
-
-        for (i, item) in items.iter().enumerate() {
-            let id = i as i32 + 1;
-            users.insert(
-                id,
-                DbUser {
-                    id,
-                    name: item.to_string(),
-                },
-            );
-        }
-
-        let mut posts: DbPosts = HashMap::new();
-        let mut id = 0;
-        let mut insert_post = |user_id: i32, vol: i32| -> () {
-            id = id + 1;
-            let user_name = &users.get(&user_id).unwrap().name;
-            posts.insert(
-                id,
-                DbPost {
-                    id,
-                    user_id,
-                    title: format!("{} vol:{}", user_name, vol),
-                },
-            );
-        };
-
-        insert_post(1, 1);
-        insert_post(1, 2);
-        insert_post(3, 1);
-        insert_post(4, 1);
-        insert_post(4, 2);
-        insert_post(4, 3);
+        init_data();
 
         DataSources {
-            users: users.clone(),
-            posts: posts.clone(),
-            user_loader: create_user_loader(users),
-            post_loader: create_post_loader(posts),
+            user_loader: create_user_loader(),
+            post_loader: create_post_loader(),
         }
     }
 
@@ -78,8 +88,9 @@ impl DataSources {
     }
 
     pub fn get_users(&self) -> Option<Vec<User>> {
-        let users = self
-            .users
+        let users = DB_USERS
+            .lock()
+            .unwrap()
             .values()
             .map(|u| User { data: u.clone() })
             .collect::<Vec<User>>();
@@ -92,8 +103,9 @@ impl DataSources {
     }
 
     pub fn get_posts(&self) -> Option<Vec<Post>> {
-        let posts = self
-            .posts
+        let posts = DB_POSTS
+            .lock()
+            .unwrap()
             .values()
             .map(|p| Post { data: p.clone() })
             .collect::<Vec<Post>>();
@@ -102,17 +114,15 @@ impl DataSources {
     }
 }
 
-pub struct UserLoader {
-    users: DbUsers,
-}
+pub struct UserLoader;
 #[async_trait]
 impl BatchFn<i32, Option<User>> for UserLoader {
     async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Option<User>> {
         println!("fetch user_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Option<User>> = HashMap::new();
 
-        let fetch_data = self
-            .users
+        let db = DB_USERS.lock().unwrap();
+        let fetch_data = db
             .values()
             .filter(|i| keys.contains(&i.id))
             .collect::<Vec<&DbUser>>();
@@ -131,21 +141,19 @@ impl BatchFn<i32, Option<User>> for UserLoader {
 }
 
 pub type UserLoaderType = Loader<i32, Option<User>, UserLoader>;
-pub fn create_user_loader(users: DbUsers) -> UserLoaderType {
-    Loader::new(UserLoader { users }).with_yield_count(100)
+pub fn create_user_loader() -> UserLoaderType {
+    Loader::new(UserLoader).with_yield_count(100)
 }
 
-pub struct PostLoader {
-    posts: DbPosts,
-}
+pub struct PostLoader;
 #[async_trait]
 impl BatchFn<i32, Vec<Post>> for PostLoader {
     async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Vec<Post>> {
         println!("fetch post_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Vec<Post>> = HashMap::new();
 
-        let fetch_data = self
-            .posts
+        let db = DB_POSTS.lock().unwrap();
+        let fetch_data = db
             .values()
             .filter(|i| keys.contains(&i.user_id))
             .collect::<Vec<&DbPost>>();
@@ -165,6 +173,6 @@ impl BatchFn<i32, Vec<Post>> for PostLoader {
 }
 
 pub type PostLoaderType = Loader<i32, Vec<Post>, PostLoader>;
-pub fn create_post_loader(posts: DbPosts) -> PostLoaderType {
-    Loader::new(PostLoader { posts }).with_yield_count(100)
+pub fn create_post_loader() -> PostLoaderType {
+    Loader::new(PostLoader).with_yield_count(100)
 }
