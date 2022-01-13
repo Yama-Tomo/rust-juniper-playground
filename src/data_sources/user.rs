@@ -5,16 +5,11 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use crate::data_sources::entities::User as UserEntity;
 use crate::data_sources::post::DB_POSTS;
 use crate::resolvers::objects::*;
 
-#[derive(Clone)]
-pub struct DbUser {
-    pub id: i32,
-    pub name: String,
-}
-
-type DbUsers = HashMap<i32, DbUser>;
+type DbUsers = HashMap<i32, UserEntity>;
 
 // TODO: RDBMSを使うようになったらonce_cellもアンインストール
 pub static DB_USERS: Lazy<Mutex<DbUsers>> = Lazy::new(|| Mutex::new(HashMap::new()));
@@ -46,7 +41,7 @@ impl Datasource {
 
     pub fn create_user(&self, input: UserInput) -> Option<User> {
         let next_id = DB_USERS.lock().unwrap().len() as i32 + 1;
-        let data = DbUser {
+        let data = UserEntity {
             id: next_id,
             name: input.name,
         };
@@ -61,7 +56,7 @@ impl Datasource {
         // TODO: unwrapせずにResult型で返す
         let current_data = DB_USERS.lock().unwrap().get(&id).unwrap().clone();
 
-        let new_data = DbUser {
+        let new_data = UserEntity {
             name: input.name,
             ..current_data
         };
@@ -92,7 +87,7 @@ impl BatchFn<i32, Option<User>> for UserLoader {
         let fetch_data = db
             .values()
             .filter(|i| keys.contains(&i.id))
-            .collect::<Vec<&DbUser>>();
+            .collect::<Vec<&UserEntity>>();
 
         for key in keys {
             let data = match fetch_data.iter().find(|i| &i.id == key) {

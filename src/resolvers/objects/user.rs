@@ -1,12 +1,12 @@
 use juniper::{graphql_object, GraphQLInputObject};
 
 use crate::context::Context;
-use crate::data_sources::DbUser;
+use crate::data_sources::entities;
 use crate::resolvers::objects::Post;
 
 #[derive(Clone)]
 pub struct User {
-    pub data: DbUser,
+    pub data: entities::User,
 }
 
 #[graphql_object(context = Context)]

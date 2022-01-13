@@ -5,16 +5,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use crate::data_sources::entities::Post as PostEntity;
 use crate::resolvers::objects::*;
 
-#[derive(Clone)]
-pub struct DbPost {
-    pub id: i32,
-    pub user_id: i32,
-    pub title: String,
-}
-
-type DbPosts = HashMap<i32, DbPost>;
+type DbPosts = HashMap<i32, PostEntity>;
 
 // TODO: RDBMSを使うようになったらonce_cellもアンインストール
 pub static DB_POSTS: Lazy<Mutex<DbPosts>> = Lazy::new(|| Mutex::new(HashMap::new()));
@@ -46,7 +40,7 @@ impl Datasource {
 
     pub fn create_post(&self, input: PostInput) -> Option<Post> {
         let next_id = DB_POSTS.lock().unwrap().len() as i32 + 1;
-        let data = DbPost {
+        let data = PostEntity {
             id: next_id,
             user_id: input.user_id,
             title: input.title,
@@ -62,7 +56,7 @@ impl Datasource {
         // TODO: unwrapせずにResult型で返す
         let current_data = DB_POSTS.lock().unwrap().get(&id).unwrap().clone();
 
-        let new_data = DbPost {
+        let new_data = PostEntity {
             title: input.title,
             ..current_data
         };
@@ -91,7 +85,7 @@ impl BatchFn<i32, Vec<Post>> for PostLoader {
         let fetch_data = db
             .values()
             .filter(|i| keys.contains(&i.user_id))
-            .collect::<Vec<&DbPost>>();
+            .collect::<Vec<&PostEntity>>();
 
         for key in keys {
             let posts = fetch_data

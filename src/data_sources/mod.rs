@@ -1,11 +1,10 @@
-mod entities;
+pub mod entities;
 mod post;
 mod user;
 
-pub use self::post::DbPost;
 use self::post::DB_POSTS;
-pub use self::user::DbUser;
 use self::user::DB_USERS;
+use entities::*;
 
 fn init_data() -> () {
     if DB_USERS.lock().unwrap().len() > 0 {
@@ -18,7 +17,7 @@ fn init_data() -> () {
         let id = i as i32 + 1;
         DB_USERS.lock().unwrap().insert(
             id,
-            DbUser {
+            User {
                 id,
                 name: item.to_string(),
             },
@@ -30,7 +29,7 @@ fn init_data() -> () {
         id = id + 1;
         DB_POSTS.lock().unwrap().insert(
             id,
-            DbPost {
+            Post {
                 id,
                 user_id,
                 title: format!(
