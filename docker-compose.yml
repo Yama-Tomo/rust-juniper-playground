@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  graphql:
+    build:
+      context: docker/graphql
+    working_dir: /app
+    environment:
+      - CARGO_TARGET_DIR=/target
+    command: cargo watch -x 'run'
+    volumes:
+      - ./:/app
+      - rust_target_vol:/target
+
+volumes:
+  rust_target_vol:
+    driver: local
