@@ -1,5 +1,5 @@
 mod post;
 mod user;
 
-pub use self::post::Post;
-pub use self::user::User;
+pub use self::post::*;
+pub use self::user::*;

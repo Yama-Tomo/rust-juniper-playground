@@ -98,6 +98,19 @@ impl DataSources {
         Some(users)
     }
 
+    pub fn create_user(&self, input: UserInput) -> Option<User> {
+        let next_id = DB_USERS.lock().unwrap().len() as i32 + 1;
+        let data = DbUser {
+            id: next_id,
+            name: input.name,
+        };
+
+        let mut db = DB_USERS.lock().unwrap();
+        db.insert(next_id, data.clone());
+
+        return Some(User { data });
+    }
+
     pub async fn get_posts_by_user_id(&self, id: i32) -> Vec<Post> {
         self.post_loader.load(id).await
     }
@@ -111,6 +124,20 @@ impl DataSources {
             .collect::<Vec<Post>>();
 
         Some(posts)
+    }
+
+    pub fn create_post(&self, input: PostInput) -> Option<Post> {
+        let next_id = DB_POSTS.lock().unwrap().len() as i32 + 1;
+        let data = DbPost {
+            id: next_id,
+            user_id: input.user_id,
+            title: input.title,
+        };
+
+        let mut db = DB_POSTS.lock().unwrap();
+        db.insert(next_id, data.clone());
+
+        return Some(Post { data });
     }
 }
 

@@ -1,4 +1,4 @@
-use juniper::graphql_object;
+use juniper::{graphql_object, GraphQLInputObject};
 
 use super::User;
 use crate::context::Context;
@@ -22,4 +22,10 @@ impl Post {
     async fn user(&self, context: &Context) -> Option<User> {
         context.datasources.get_user(self.data.user_id).await
     }
+}
+
+#[derive(GraphQLInputObject)]
+pub struct PostInput {
+    pub user_id: i32,
+    pub title: String,
 }
