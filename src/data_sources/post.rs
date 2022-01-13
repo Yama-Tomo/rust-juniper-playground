@@ -27,7 +27,7 @@ impl Datasource {
         self.loader.load(id).await
     }
 
-    pub fn get_posts(&self) -> Option<Vec<Post>> {
+    pub fn get_all(&self) -> Option<Vec<Post>> {
         let posts = DB_POSTS
             .lock()
             .unwrap()
@@ -38,7 +38,7 @@ impl Datasource {
         Some(posts)
     }
 
-    pub fn create_post(&self, input: PostInput) -> Option<Post> {
+    pub fn create(&self, input: PostInput) -> Option<Post> {
         let next_id = DB_POSTS.lock().unwrap().len() as i32 + 1;
         let data = PostEntity {
             id: next_id,
@@ -52,7 +52,7 @@ impl Datasource {
         return Some(Post { data });
     }
 
-    pub fn update_post(&self, id: i32, input: PostInput) -> Post {
+    pub fn update(&self, id: i32, input: PostInput) -> Post {
         // TODO: unwrapせずにResult型で返す
         let current_data = DB_POSTS.lock().unwrap().get(&id).unwrap().clone();
 
@@ -66,7 +66,7 @@ impl Datasource {
         return Post { data: new_data };
     }
 
-    pub fn delete_post(&self, id: i32) -> i32 {
+    pub fn delete(&self, id: i32) -> i32 {
         // TODO: unwrapせずにResult型で返す
         let delete_data = DB_POSTS.lock().unwrap().remove(&id).unwrap();
 

@@ -14,15 +14,15 @@ impl Query {
         context: &Context,
         #[graphql(description = "id of the user")] id: i32,
     ) -> Option<User> {
-        context.datasources.user.get_user(id).await
+        context.datasources.user.get_by_id(id).await
     }
 
     fn users(context: &Context) -> Option<Vec<User>> {
-        context.datasources.user.get_users()
+        context.datasources.user.get_all()
     }
 
     fn posts(context: &Context) -> Option<Vec<Post>> {
-        context.datasources.post.get_posts()
+        context.datasources.post.get_all()
     }
 
     fn hello() -> &'static str {

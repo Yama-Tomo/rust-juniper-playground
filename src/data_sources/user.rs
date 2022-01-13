@@ -24,11 +24,11 @@ impl Datasource {
         }
     }
 
-    pub async fn get_user(&self, id: i32) -> Option<User> {
+    pub async fn get_by_id(&self, id: i32) -> Option<User> {
         self.loader.load(id).await
     }
 
-    pub fn get_users(&self) -> Option<Vec<User>> {
+    pub fn get_all(&self) -> Option<Vec<User>> {
         let users = DB_USERS
             .lock()
             .unwrap()
@@ -39,7 +39,7 @@ impl Datasource {
         Some(users)
     }
 
-    pub fn create_user(&self, input: UserInput) -> Option<User> {
+    pub fn create(&self, input: UserInput) -> Option<User> {
         let next_id = DB_USERS.lock().unwrap().len() as i32 + 1;
         let data = UserEntity {
             id: next_id,
@@ -52,7 +52,7 @@ impl Datasource {
         return Some(User { data });
     }
 
-    pub fn update_user(&self, id: i32, input: UserInput) -> User {
+    pub fn update(&self, id: i32, input: UserInput) -> User {
         // TODO: unwrapせずにResult型で返す
         let current_data = DB_USERS.lock().unwrap().get(&id).unwrap().clone();
 
@@ -66,7 +66,7 @@ impl Datasource {
         return User { data: new_data };
     }
 
-    pub fn delete_user(&self, id: i32) -> i32 {
+    pub fn delete(&self, id: i32) -> i32 {
         // TODO: unwrapせずにResult型で返す
         let delete_data = DB_USERS.lock().unwrap().remove(&id).unwrap();
         let mut posts = DB_POSTS.lock().unwrap();
