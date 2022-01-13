@@ -4,14 +4,16 @@ services:
   graphql:
     build:
       context: docker/graphql
+      args:
+        - uid=${CONTAINER_USER_UID}
     working_dir: /app
     environment:
-      - CARGO_TARGET_DIR=/target
+      - CARGO_TARGET_DIR=/cargo_target
     command: cargo watch -x 'run'
     volumes:
       - ./:/app
-      - rust_target_vol:/target
+      - cargo_target_vol:/cargo_target
 
 volumes:
-  rust_target_vol:
+  cargo_target_vol:
     driver: local
