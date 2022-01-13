@@ -14,11 +14,19 @@ impl Mutation {
         context.datasources.update_user(id, input)
     }
 
+    fn delete_user(context: &Context, id: i32) -> i32 {
+        context.datasources.delete_user(id)
+    }
+
     fn add_post(context: &Context, input: PostInput) -> Option<Post> {
         context.datasources.create_post(input)
     }
 
     fn update_post(context: &Context, id: i32, input: PostInput) -> Post {
         context.datasources.update_post(id, input)
+    }
+    
+    fn delete_post(context: &Context, id: i32) -> i32 {
+        context.datasources.delete_post(id)
     }
 }

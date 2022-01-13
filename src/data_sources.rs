@@ -125,6 +125,15 @@ impl DataSources {
         return User { data: new_data };
     }
 
+    pub fn delete_user(&self, id: i32) -> i32 {
+        // TODO: unwrapせずにResult型で返す
+        let delete_data = DB_USERS.lock().unwrap().remove(&id).unwrap();
+        let mut posts = DB_POSTS.lock().unwrap();
+        posts.retain(|_, v| v.user_id != delete_data.id);
+
+        return delete_data.id;
+    }
+
     pub async fn get_posts_by_user_id(&self, id: i32) -> Vec<Post> {
         self.post_loader.load(id).await
     }
@@ -166,6 +175,13 @@ impl DataSources {
         db.insert(id, new_data.clone());
 
         return Post { data: new_data };
+    }
+
+    pub fn delete_post(&self, id: i32) -> i32 {
+        // TODO: unwrapせずにResult型で返す
+        let delete_data = DB_POSTS.lock().unwrap().remove(&id).unwrap();
+
+        return delete_data.id;
     }
 }
 
