@@ -111,6 +111,20 @@ impl DataSources {
         return Some(User { data });
     }
 
+    pub fn update_user(&self, id: i32, input: UserInput) -> User {
+        // TODO: unwrapせずにResult型で返す
+        let current_data = DB_USERS.lock().unwrap().get(&id).unwrap().clone();
+
+        let new_data = DbUser {
+            name: input.name,
+            ..current_data
+        };
+        let mut db = DB_USERS.lock().unwrap();
+        db.insert(id, new_data.clone());
+
+        return User { data: new_data };
+    }
+
     pub async fn get_posts_by_user_id(&self, id: i32) -> Vec<Post> {
         self.post_loader.load(id).await
     }
@@ -138,6 +152,20 @@ impl DataSources {
         db.insert(next_id, data.clone());
 
         return Some(Post { data });
+    }
+
+    pub fn update_post(&self, id: i32, input: PostInput) -> Post {
+        // TODO: unwrapせずにResult型で返す
+        let current_data = DB_POSTS.lock().unwrap().get(&id).unwrap().clone();
+
+        let new_data = DbPost {
+            title: input.title,
+            ..current_data
+        };
+        let mut db = DB_POSTS.lock().unwrap();
+        db.insert(id, new_data.clone());
+
+        return Post { data: new_data };
     }
 }
 
