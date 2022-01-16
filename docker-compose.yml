@@ -13,7 +13,17 @@ services:
     volumes:
       - ./:/app
       - cargo_target_vol:/cargo_target
+  db:
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=playground_dev
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - mysql_vol:/var/lib/mysql
 
 volumes:
   cargo_target_vol:
     driver: local
+  mysql_vol:
+    driver: local
+
