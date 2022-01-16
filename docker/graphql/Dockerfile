@@ -11,6 +11,6 @@ RUN apt-get update \
     && chown rust_app /cargo_target
 
 RUN su rust_app -c " \
-      cargo install cargo-watch"
+      cargo install cargo-watch sqlx-cli"
 
 USER rust_app
