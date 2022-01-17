@@ -5,6 +5,8 @@ mod user;
 use self::post::DB_POSTS;
 use self::user::DB_USERS;
 pub use self::entities::public::*;
+use sea_orm::{Database, DatabaseConnection};
+use std::env;
 
 fn init_data() -> () {
     if DB_USERS.lock().unwrap().len() > 0 {
@@ -47,6 +49,13 @@ fn init_data() -> () {
     insert_post(4, 1);
     insert_post(4, 2);
     insert_post(4, 3);
+}
+
+pub async fn create_db_connection() -> DatabaseConnection {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    Database::connect(database_url)
+        .await
+        .expect("create database connection")
 }
 
 pub struct DataSources {
