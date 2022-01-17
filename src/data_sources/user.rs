@@ -3,7 +3,7 @@ use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::data_sources::entities::User as UserEntity;
 use crate::data_sources::post::DB_POSTS;
@@ -15,12 +15,14 @@ type DbUsers = HashMap<i32, UserEntity>;
 pub static DB_USERS: Lazy<Mutex<DbUsers>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub struct Datasource {
+    conn: Arc<DatabaseConnection>,
     loader: BatchLoaderType,
 }
 impl Datasource {
-    pub fn new() -> Datasource {
+    pub fn new(conn: &Arc<DatabaseConnection>) -> Datasource {
         Datasource {
-            loader: create_loader(),
+            conn: conn.clone(),
+            loader: create_loader(conn.clone()),
         }
     }
 
@@ -76,7 +78,9 @@ impl Datasource {
     }
 }
 
-struct UserLoader;
+struct UserLoader {
+    conn: Arc<DatabaseConnection>,
+}
 #[async_trait]
 impl BatchFn<i32, Option<User>> for UserLoader {
     async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Option<User>> {
@@ -103,6 +107,6 @@ impl BatchFn<i32, Option<User>> for UserLoader {
 }
 
 type BatchLoaderType = Loader<i32, Option<User>, UserLoader>;
-fn create_loader() -> BatchLoaderType {
-    Loader::new(UserLoader).with_yield_count(100)
+fn create_loader(conn: Arc<DatabaseConnection>) -> BatchLoaderType {
+    Loader::new(UserLoader { conn }).with_yield_count(100)
 }

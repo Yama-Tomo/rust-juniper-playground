@@ -2,7 +2,11 @@ use actix_web::{
     web::{self, Data},
     App, Error, HttpResponse, HttpServer, Responder,
 };
+use dotenv::dotenv;
 use juniper_actix::{graphql_handler, playground_handler};
+use sea_orm::DatabaseConnection;
+
+use crate::data_sources::create_db_connection;
 
 mod context;
 mod data_sources;
@@ -21,16 +25,21 @@ async fn graphql_route(
     req: actix_web::HttpRequest,
     payload: actix_web::web::Payload,
     schema: web::Data<schema::Schema>,
+    conn: web::Data<DatabaseConnection>,
 ) -> Result<HttpResponse, Error> {
-    let context = context::create();
+    let context = context::create(&conn);
     graphql_handler(&schema, &context, req, payload).await
 }
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    dotenv().ok();
+    let conn = create_db_connection().await;
+
+    HttpServer::new(move || {
         App::new()
             .app_data(Data::new(schema::create()))
+            .app_data(Data::new(conn.clone()))
             .route("/", web::get().to(index))
             .service(
                 web::resource("/graphql")

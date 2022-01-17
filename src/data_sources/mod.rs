@@ -7,6 +7,7 @@ use self::user::DB_USERS;
 pub use self::entities::public::*;
 use sea_orm::{Database, DatabaseConnection};
 use std::env;
+use std::sync::Arc;
 
 fn init_data() -> () {
     if DB_USERS.lock().unwrap().len() > 0 {
@@ -63,12 +64,12 @@ pub struct DataSources {
     pub user: user::Datasource,
 }
 impl DataSources {
-    pub fn new() -> DataSources {
+    pub fn new(conn: &Arc<DatabaseConnection>) -> DataSources {
         init_data();
 
         DataSources {
-            post: post::Datasource::new(),
-            user: user::Datasource::new(),
+            post: post::Datasource::new(conn),
+            user: user::Datasource::new(conn),
         }
     }
 }

@@ -1,4 +1,6 @@
 use juniper;
+use sea_orm::DatabaseConnection;
+use std::sync::Arc;
 
 use crate::data_sources::DataSources;
 
@@ -9,8 +11,8 @@ pub struct Context {
     pub datasources: DataSources,
 }
 
-pub fn create() -> Context {
+pub fn create(conn: &Arc<DatabaseConnection>) -> Context {
     Context {
-        datasources: DataSources::new(),
+        datasources: DataSources::new(conn),
     }
 }
