@@ -97,7 +97,6 @@ struct PostLoader {
 #[async_trait]
 impl BatchFn<i32, Vec<Post>> for PostLoader {
     async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Vec<Post>> {
-        println!("fetch post_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Vec<Post>> = HashMap::new();
 
         let fetch_data = post::Entity::find()

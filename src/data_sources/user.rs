@@ -96,7 +96,6 @@ struct UserLoader {
 #[async_trait]
 impl BatchFn<i32, Option<User>> for UserLoader {
     async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Option<User>> {
-        println!("fetch user_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Option<User>> = HashMap::new();
 
         let fetch_data = user::Entity::find()

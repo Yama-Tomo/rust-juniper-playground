@@ -3,13 +3,16 @@ mod post;
 mod user;
 
 pub use self::entities::public::*;
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::env;
 use std::sync::Arc;
 
 pub async fn create_db_connection() -> DatabaseConnection {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    Database::connect(database_url)
+    let mut opt = ConnectOptions::new(database_url);
+    opt.max_connections(10).sqlx_logging(false);
+
+    Database::connect(opt)
         .await
         .expect("create database connection")
 }

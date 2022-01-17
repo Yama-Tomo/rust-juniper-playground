@@ -34,6 +34,12 @@ async fn graphql_route(
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_test_writer()
+        .init();
+
     let conn = create_db_connection().await;
 
     HttpServer::new(move || {
