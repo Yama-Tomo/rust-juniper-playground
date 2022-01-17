@@ -1,12 +1,15 @@
 use async_trait::async_trait;
+use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
 use once_cell::sync::Lazy;
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::data_sources::entities::User as UserEntity;
-use crate::data_sources::post::DB_POSTS;
+use crate::data_sources::entities::user;
 use crate::resolvers::objects::*;
 
 type DbUsers = HashMap<i32, UserEntity>;
@@ -30,51 +33,66 @@ impl Datasource {
         self.loader.load(id).await
     }
 
-    pub fn get_all(&self) -> Option<Vec<User>> {
-        let users = DB_USERS
-            .lock()
+    pub async fn get_all(&self) -> Option<Vec<User>> {
+        let users = user::Entity::find().all(self.conn.as_ref()).await.unwrap();
+
+        let mut results: Vec<User> = vec![];
+        for item in users {
+            results.push(User { data: item });
+        }
+
+        Some(results)
+    }
+
+    pub async fn create(&self, input: UserInput) -> Option<User> {
+        let now = Utc::now().naive_utc();
+        let data = user::ActiveModel {
+            name: Set(input.name),
+            created_at: Set(now),
+            updated_at: Set(now),
+            ..Default::default()
+        };
+
+        // TODO: unwrapせずにResult型で返す
+        let res = data.insert(self.conn.as_ref()).await.unwrap();
+
+        Some(User { data: res })
+    }
+
+    pub async fn update(&self, id: i32, input: UserInput) -> User {
+        // TODO: unwrapせずにResult型で返す
+        let mut current_data: user::ActiveModel = user::Entity::find_by_id(id)
+            .one(self.conn.as_ref())
+            .await
+            .expect("fetch current user data")
             .unwrap()
-            .values()
-            .map(|u| User { data: u.clone() })
-            .collect::<Vec<User>>();
+            .into();
 
-        Some(users)
+        current_data.name = Set(input.name);
+        // TODO: before_saveフックに実装
+        current_data.updated_at = Set(Utc::now().naive_utc());
+        let updated = current_data.update(self.conn.as_ref()).await;
+
+        User {
+            data: updated.unwrap(),
+        }
     }
 
-    pub fn create(&self, input: UserInput) -> Option<User> {
-        let next_id = DB_USERS.lock().unwrap().len() as i32 + 1;
-        let data = UserEntity {
-            id: next_id,
-            name: input.name,
-        };
-
-        let mut db = DB_USERS.lock().unwrap();
-        db.insert(next_id, data.clone());
-
-        return Some(User { data });
-    }
-
-    pub fn update(&self, id: i32, input: UserInput) -> User {
+    pub async fn delete(&self, id: i32) -> i32 {
         // TODO: unwrapせずにResult型で返す
-        let current_data = DB_USERS.lock().unwrap().get(&id).unwrap().clone();
+        let current_data: user::ActiveModel = user::Entity::find_by_id(id)
+            .one(self.conn.as_ref())
+            .await
+            .expect("fetch current user data")
+            .unwrap()
+            .into();
 
-        let new_data = UserEntity {
-            name: input.name,
-            ..current_data
-        };
-        let mut db = DB_USERS.lock().unwrap();
-        db.insert(id, new_data.clone());
+        current_data
+            .delete(self.conn.as_ref())
+            .await
+            .expect("remove user data");
 
-        return User { data: new_data };
-    }
-
-    pub fn delete(&self, id: i32) -> i32 {
-        // TODO: unwrapせずにResult型で返す
-        let delete_data = DB_USERS.lock().unwrap().remove(&id).unwrap();
-        let mut posts = DB_POSTS.lock().unwrap();
-        posts.retain(|_, v| v.user_id != delete_data.id);
-
-        return delete_data.id;
+        id
     }
 }
 
@@ -87,15 +105,15 @@ impl BatchFn<i32, Option<User>> for UserLoader {
         println!("fetch user_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Option<User>> = HashMap::new();
 
-        let db = DB_USERS.lock().unwrap();
-        let fetch_data = db
-            .values()
-            .filter(|i| keys.contains(&i.id))
-            .collect::<Vec<&UserEntity>>();
+        let fetch_data = user::Entity::find()
+            .filter(user::Column::Id.is_in(keys.to_vec()))
+            .all(self.conn.as_ref())
+            .await
+            .unwrap();
 
         for key in keys {
-            let data = match fetch_data.iter().find(|i| &i.id == key) {
-                Some(&u) => Some(User { data: u.clone() }),
+            let data = match fetch_data.iter().find(|&i| &i.id == key) {
+                Some(u) => Some(User { data: u.clone() }),
                 None => None,
             };
 

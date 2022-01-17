@@ -1,11 +1,15 @@
 use async_trait::async_trait;
+use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
 use once_cell::sync::Lazy;
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::data_sources::entities::Post as PostEntity;
+use crate::data_sources::entities::post;
 use crate::resolvers::objects::*;
 
 type DbPosts = HashMap<i32, PostEntity>;
@@ -29,50 +33,67 @@ impl Datasource {
         self.loader.load(id).await
     }
 
-    pub fn get_all(&self) -> Option<Vec<Post>> {
-        let posts = DB_POSTS
-            .lock()
+    pub async fn get_all(&self) -> Option<Vec<Post>> {
+        let posts = post::Entity::find().all(self.conn.as_ref()).await.unwrap();
+
+        let mut results: Vec<Post> = vec![];
+        for item in posts {
+            results.push(Post { data: item });
+        }
+
+        Some(results)
+    }
+
+    pub async fn create(&self, input: PostInput) -> Option<Post> {
+        let now = Utc::now().naive_utc();
+        let data = post::ActiveModel {
+            title: Set(input.title),
+            user_id: Set(input.user_id),
+            created_at: Set(now),
+            updated_at: Set(now),
+            ..Default::default()
+        };
+
+        // TODO: unwrapせずにResult型で返す
+        let res = data.insert(self.conn.as_ref()).await.unwrap();
+
+        Some(Post { data: res })
+    }
+
+    pub async fn update(&self, id: i32, input: PostInput) -> Post {
+        // TODO: unwrapせずにResult型で返す
+        let mut current_data: post::ActiveModel = post::Entity::find_by_id(id)
+            .one(self.conn.as_ref())
+            .await
+            .expect("fetch current post data")
             .unwrap()
-            .values()
-            .map(|p| Post { data: p.clone() })
-            .collect::<Vec<Post>>();
+            .into();
 
-        Some(posts)
+        current_data.title = Set(input.title);
+        // TODO: before_saveフックに実装
+        current_data.updated_at = Set(Utc::now().naive_utc());
+        let updated = current_data.update(self.conn.as_ref()).await;
+
+        Post {
+            data: updated.unwrap(),
+        }
     }
 
-    pub fn create(&self, input: PostInput) -> Option<Post> {
-        let next_id = DB_POSTS.lock().unwrap().len() as i32 + 1;
-        let data = PostEntity {
-            id: next_id,
-            user_id: input.user_id,
-            title: input.title,
-        };
-
-        let mut db = DB_POSTS.lock().unwrap();
-        db.insert(next_id, data.clone());
-
-        return Some(Post { data });
-    }
-
-    pub fn update(&self, id: i32, input: PostInput) -> Post {
+    pub async fn delete(&self, id: i32) -> i32 {
         // TODO: unwrapせずにResult型で返す
-        let current_data = DB_POSTS.lock().unwrap().get(&id).unwrap().clone();
+        let current_data: post::ActiveModel = post::Entity::find_by_id(id)
+            .one(self.conn.as_ref())
+            .await
+            .expect("fetch current post data")
+            .unwrap()
+            .into();
 
-        let new_data = PostEntity {
-            title: input.title,
-            ..current_data
-        };
-        let mut db = DB_POSTS.lock().unwrap();
-        db.insert(id, new_data.clone());
+        current_data
+            .delete(self.conn.as_ref())
+            .await
+            .expect("remove post data");
 
-        return Post { data: new_data };
-    }
-
-    pub fn delete(&self, id: i32) -> i32 {
-        // TODO: unwrapせずにResult型で返す
-        let delete_data = DB_POSTS.lock().unwrap().remove(&id).unwrap();
-
-        return delete_data.id;
+        id
     }
 }
 
@@ -85,17 +106,17 @@ impl BatchFn<i32, Vec<Post>> for PostLoader {
         println!("fetch post_id = {:?}", keys);
         let mut hashmap: HashMap<i32, Vec<Post>> = HashMap::new();
 
-        let db = DB_POSTS.lock().unwrap();
-        let fetch_data = db
-            .values()
-            .filter(|i| keys.contains(&i.user_id))
-            .collect::<Vec<&PostEntity>>();
+        let fetch_data = post::Entity::find()
+            .filter(post::Column::UserId.is_in(keys.to_vec()))
+            .all(self.conn.as_ref())
+            .await
+            .unwrap();
 
         for key in keys {
             let posts = fetch_data
                 .iter()
-                .filter(|i| &i.user_id == key)
-                .map(|&i| Post { data: i.clone() })
+                .filter(|&i| &i.user_id == key)
+                .map(|i| Post { data: i.clone() })
                 .collect::<Vec<Post>>();
 
             hashmap.insert(*key, posts);
