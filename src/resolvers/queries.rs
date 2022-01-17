@@ -17,12 +17,12 @@ impl Query {
         context.datasources.user.get_by_id(id).await
     }
 
-    fn users(context: &Context) -> Option<Vec<User>> {
-        context.datasources.user.get_all()
+    async fn users(context: &Context) -> Option<Vec<User>> {
+        context.datasources.user.get_all().await
     }
 
-    fn posts(context: &Context) -> Option<Vec<Post>> {
-        context.datasources.post.get_all()
+    async fn posts(context: &Context) -> Option<Vec<Post>> {
+        context.datasources.post.get_all().await
     }
 
     fn hello() -> &'static str {

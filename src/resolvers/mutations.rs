@@ -6,27 +6,27 @@ use crate::resolvers::objects::*;
 pub struct Mutation;
 #[graphql_object(context = Context)]
 impl Mutation {
-    fn add_user(context: &Context, input: UserInput) -> Option<User> {
-        context.datasources.user.create(input)
+    async fn add_user(context: &Context, input: UserInput) -> Option<User> {
+        context.datasources.user.create(input).await
     }
 
-    fn update_user(context: &Context, id: i32, input: UserInput) -> User {
-        context.datasources.user.update(id, input)
+    async fn update_user(context: &Context, id: i32, input: UserInput) -> User {
+        context.datasources.user.update(id, input).await
     }
 
-    fn delete_user(context: &Context, id: i32) -> i32 {
-        context.datasources.user.delete(id)
+    async fn delete_user(context: &Context, id: i32) -> i32 {
+        context.datasources.user.delete(id).await
     }
 
-    fn add_post(context: &Context, input: PostInput) -> Option<Post> {
-        context.datasources.post.create(input)
+    async fn add_post(context: &Context, input: PostInput) -> Option<Post> {
+        context.datasources.post.create(input).await
     }
 
-    fn update_post(context: &Context, id: i32, input: PostInput) -> Post {
-        context.datasources.post.update(id, input)
+    async fn update_post(context: &Context, id: i32, input: PostInput) -> Post {
+        context.datasources.post.update(id, input).await
     }
 
-    fn delete_post(context: &Context, id: i32) -> i32 {
-        context.datasources.post.delete(id)
+    async fn delete_post(context: &Context, id: i32) -> i32 {
+        context.datasources.post.delete(id).await
     }
 }
