@@ -23,7 +23,7 @@ impl Datasource {
         }
     }
 
-    pub async fn get_user_id(&self, id: i32) -> Vec<Post> {
+    pub async fn get_by_user_id(&self, id: i32) -> Vec<Post> {
         self.loader.load(id).await
     }
 
