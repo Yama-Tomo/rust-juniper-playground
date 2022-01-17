@@ -3,7 +3,8 @@ use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
+    QueryFilter,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -23,19 +24,23 @@ impl Datasource {
         }
     }
 
-    pub async fn get_by_id(&self, id: i32) -> Option<User> {
+    pub async fn get_by_id(&self, id: i32) -> Result<Option<User>, String> {
         self.loader.load(id).await
     }
 
-    pub async fn get_all(&self) -> Option<Vec<User>> {
-        let users = user::Entity::find().all(self.conn.as_ref()).await.unwrap();
+    pub async fn get_all(&self) -> Result<Vec<User>, DbErr> {
+        let users = user::Entity::find().all(self.conn.as_ref()).await;
+        match users {
+            Ok(users) => {
+                let mut results: Vec<User> = vec![];
+                for item in users {
+                    results.push(User { data: item });
+                }
 
-        let mut results: Vec<User> = vec![];
-        for item in users {
-            results.push(User { data: item });
+                Ok(results)
+            }
+            Err(e) => Err(e),
         }
-
-        Some(results)
     }
 
     pub async fn create(&self, input: UserInput) -> Option<User> {
@@ -94,30 +99,31 @@ struct UserLoader {
     conn: Arc<DatabaseConnection>,
 }
 #[async_trait]
-impl BatchFn<i32, Option<User>> for UserLoader {
-    async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Option<User>> {
-        let mut hashmap: HashMap<i32, Option<User>> = HashMap::new();
-
+impl BatchFn<i32, Result<Option<User>, String>> for UserLoader {
+    async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Result<Option<User>, String>> {
         let fetch_data = user::Entity::find()
             .filter(user::Column::Id.is_in(keys.to_vec()))
             .all(self.conn.as_ref())
-            .await
-            .unwrap();
+            .await;
 
-        for key in keys {
-            let data = fetch_data
-                .iter()
-                .find(|&i| &i.id == key)
-                .map(|u| User { data: u.clone() });
+        match fetch_data {
+            Ok(fetch_data) => {
+                let hashmap = fetch_data
+                    .into_iter()
+                    .map(|user| (user.id, Ok(Some(User { data: user }))))
+                    .collect::<HashMap<i32, Result<Option<User>, String>>>();
 
-            hashmap.insert(*key, data);
+                keys.iter().fold(hashmap, |mut map, key| {
+                    map.entry(*key).or_insert(Ok(None));
+                    map
+                })
+            }
+            Err(db_err) => keys.iter().map(|k| (*k, Err(db_err.to_string()))).collect(),
         }
-
-        hashmap
     }
 }
 
-type BatchLoaderType = Loader<i32, Option<User>, UserLoader>;
+type BatchLoaderType = Loader<i32, Result<Option<User>, String>, UserLoader>;
 fn create_loader(conn: Arc<DatabaseConnection>) -> BatchLoaderType {
     Loader::new(UserLoader { conn }).with_yield_count(100)
 }

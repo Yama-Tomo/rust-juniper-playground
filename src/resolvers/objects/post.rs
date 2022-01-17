@@ -1,8 +1,9 @@
-use juniper::{graphql_object, GraphQLInputObject};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject};
 
 use super::User;
 use crate::context::Context;
 use crate::data_sources::models;
+use crate::resolvers::errors::data_load_error;
 
 #[derive(Clone)]
 pub struct Post {
@@ -19,8 +20,12 @@ impl Post {
         &self.data.title
     }
 
-    async fn user(&self, context: &Context) -> Option<User> {
-        context.datasources.user.get_by_id(self.data.user_id).await
+    async fn user(&self, context: &Context) -> FieldResult<Option<User>> {
+        let user = context.datasources.user.get_by_id(self.data.user_id).await;
+        match user {
+            Ok(user) => Ok(user),
+            Err(e) => Err(data_load_error(e)),
+        }
     }
 }
 

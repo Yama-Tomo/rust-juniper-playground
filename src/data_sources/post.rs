@@ -3,7 +3,8 @@ use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
+    QueryFilter,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -23,19 +24,24 @@ impl Datasource {
         }
     }
 
-    pub async fn get_by_user_id(&self, id: i32) -> Vec<Post> {
+    pub async fn get_by_user_id(&self, id: i32) -> Result<Vec<Post>, String> {
         self.loader.load(id).await
     }
 
-    pub async fn get_all(&self) -> Option<Vec<Post>> {
-        let posts = post::Entity::find().all(self.conn.as_ref()).await.unwrap();
+    pub async fn get_all(&self) -> Result<Vec<Post>, DbErr> {
+        let posts = post::Entity::find().all(self.conn.as_ref()).await;
 
-        let mut results: Vec<Post> = vec![];
-        for item in posts {
-            results.push(Post { data: item });
+        match posts {
+            Ok(posts) => {
+                let mut results: Vec<Post> = vec![];
+                for item in posts {
+                    results.push(Post { data: item });
+                }
+
+                Ok(results)
+            }
+            Err(e) => Err(e),
         }
-
-        Some(results)
     }
 
     pub async fn create(&self, input: PostInput) -> Option<Post> {
@@ -95,31 +101,34 @@ struct PostLoader {
     conn: Arc<DatabaseConnection>,
 }
 #[async_trait]
-impl BatchFn<i32, Vec<Post>> for PostLoader {
-    async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Vec<Post>> {
-        let mut hashmap: HashMap<i32, Vec<Post>> = HashMap::new();
-
+impl BatchFn<i32, Result<Vec<Post>, String>> for PostLoader {
+    async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Result<Vec<Post>, String>> {
         let fetch_data = post::Entity::find()
             .filter(post::Column::UserId.is_in(keys.to_vec()))
             .all(self.conn.as_ref())
-            .await
-            .unwrap();
+            .await;
 
-        for key in keys {
-            let posts = fetch_data
-                .iter()
-                .filter(|&i| &i.user_id == key)
-                .map(|i| Post { data: i.clone() })
-                .collect::<Vec<Post>>();
+        match fetch_data {
+            Ok(fetch_data) => {
+                let mut hashmap: HashMap<i32, Result<Vec<Post>, String>> = HashMap::new();
+                for key in keys {
+                    let posts = fetch_data
+                        .iter()
+                        .filter(|&i| &i.user_id == key)
+                        .map(|i| Ok(Post { data: i.clone() }))
+                        .collect::<Result<Vec<Post>, String>>();
 
-            hashmap.insert(*key, posts);
+                    hashmap.insert(*key, posts);
+                }
+
+                hashmap
+            }
+            Err(db_err) => keys.iter().map(|k| (*k, Err(db_err.to_string()))).collect(),
         }
-
-        hashmap
     }
 }
 
-type BatchLoaderType = Loader<i32, Vec<Post>, PostLoader>;
+type BatchLoaderType = Loader<i32, Result<Vec<Post>, String>, PostLoader>;
 fn create_loader(conn: Arc<DatabaseConnection>) -> BatchLoaderType {
     Loader::new(PostLoader { conn }).with_yield_count(100)
 }
