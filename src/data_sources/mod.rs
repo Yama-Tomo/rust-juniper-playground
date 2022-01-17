@@ -1,10 +1,10 @@
-pub mod entities;
+mod entities;
 mod post;
 mod user;
 
 use self::post::DB_POSTS;
 use self::user::DB_USERS;
-use entities::*;
+pub use self::entities::public::*;
 
 fn init_data() -> () {
     if DB_USERS.lock().unwrap().len() > 0 {
