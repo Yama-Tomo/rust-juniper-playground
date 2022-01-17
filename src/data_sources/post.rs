@@ -2,20 +2,14 @@ use async_trait::async_trait;
 use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
-use once_cell::sync::Lazy;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::data_sources::entities::post;
 use crate::resolvers::objects::*;
-
-type DbPosts = HashMap<i32, PostEntity>;
-
-// TODO: RDBMSを使うようになったらonce_cellもアンインストール
-pub static DB_POSTS: Lazy<Mutex<DbPosts>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub struct Datasource {
     conn: Arc<DatabaseConnection>,

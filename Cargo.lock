@@ -1885,7 +1885,6 @@ dependencies = [
  "dotenv",
  "juniper",
  "juniper_actix",
- "once_cell",
  "sea-orm",
 ]
 
