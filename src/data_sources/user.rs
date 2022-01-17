@@ -106,10 +106,10 @@ impl BatchFn<i32, Option<User>> for UserLoader {
             .unwrap();
 
         for key in keys {
-            let data = match fetch_data.iter().find(|&i| &i.id == key) {
-                Some(u) => Some(User { data: u.clone() }),
-                None => None,
-            };
+            let data = fetch_data
+                .iter()
+                .find(|&i| &i.id == key)
+                .map(|u| User { data: u.clone() });
 
             hashmap.insert(*key, data);
         }

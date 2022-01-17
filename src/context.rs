@@ -1,4 +1,3 @@
-use juniper;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
