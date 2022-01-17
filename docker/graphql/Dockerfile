@@ -11,6 +11,7 @@ RUN apt-get update \
     && chown rust_app /cargo_target
 
 RUN su rust_app -c " \
+      rustup component add clippy rustfmt && \
       cargo install cargo-watch sqlx-cli"
 
 USER rust_app
