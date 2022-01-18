@@ -19,8 +19,8 @@ pub struct Datasource {
 impl Datasource {
     pub fn new(conn: &Arc<DatabaseConnection>) -> Datasource {
         Datasource {
-            conn: conn.clone(),
-            loader: create_loader(conn.clone()),
+            conn: Arc::clone(conn),
+            loader: create_loader(Arc::clone(conn)),
         }
     }
 

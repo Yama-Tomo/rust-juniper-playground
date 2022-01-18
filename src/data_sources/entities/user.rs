@@ -65,11 +65,6 @@ impl ModelBuilder {
     }
 
     // TODO: コード生成する仕組みを作りたい
-    pub fn id(mut self, val: i32) -> Self {
-        self.model.id = Set(val);
-        self
-    }
-
     pub fn name(mut self, val: String) -> Self {
         self.model.name = Set(val);
         self
@@ -96,7 +91,7 @@ impl ModelBuilder {
         self
     }
 
-    fn valid_name(mut self, errors: &mut ValidationErrors) -> Self {
+    fn valid_name(self, errors: &mut ValidationErrors) -> Self {
         if self.model.name.is_set() && self.model.name.as_ref().is_empty() {
             errors.push(ValidationError {
                 field: "name".to_string(),
