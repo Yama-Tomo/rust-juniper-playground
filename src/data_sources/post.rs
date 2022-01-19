@@ -2,15 +2,15 @@ use async_trait::async_trait;
 use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
-    QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::data_sources::entities::post;
+use crate::data_sources::entities::{errors, post};
 use crate::resolvers::objects::*;
+
+pub type PostSaveResult = Result<Result<Post, Vec<errors::ValidationError>>, DbErr>;
+pub type PostDeleteResult = Result<Result<i32, Vec<errors::ValidationError>>, DbErr>;
 
 pub struct Datasource {
     conn: Arc<DatabaseConnection>,
@@ -44,56 +44,67 @@ impl Datasource {
         }
     }
 
-    pub async fn create(&self, input: PostInput) -> Option<Post> {
+    pub async fn create(&self, input: PostInput) -> PostSaveResult {
         let now = Utc::now().naive_utc();
-        let data = post::ActiveModel {
-            title: Set(input.title),
-            user_id: Set(input.user_id),
-            created_at: Set(now),
-            updated_at: Set(now),
-            ..Default::default()
-        };
+        let build_res = post::ModelBuilder::new()
+            .title(input.title)
+            .user_id(input.user_id)
+            .updated_at(now)
+            .created_at(now)
+            .build(self.conn.as_ref())
+            .await;
 
-        // TODO: unwrapせずにResult型で返す
-        let res = data.insert(self.conn.as_ref()).await.unwrap();
-
-        Some(Post { data: res })
-    }
-
-    pub async fn update(&self, id: i32, input: PostInput) -> Post {
-        // TODO: unwrapせずにResult型で返す
-        let mut current_data: post::ActiveModel = post::Entity::find_by_id(id)
-            .one(self.conn.as_ref())
-            .await
-            .expect("fetch current post data")
-            .unwrap()
-            .into();
-
-        current_data.title = Set(input.title);
-        // TODO: before_saveフックに実装
-        current_data.updated_at = Set(Utc::now().naive_utc());
-        let updated = current_data.update(self.conn.as_ref()).await;
-
-        Post {
-            data: updated.unwrap(),
+        match build_res {
+            Ok(build_res) => match build_res {
+                Ok(model) => match model.insert(self.conn.as_ref()).await {
+                    Ok(data) => Ok(Ok(Post { data })),
+                    Err(e) => Err(e),
+                },
+                Err(validation_err) => Ok(Err(validation_err)),
+            },
+            Err(e) => Err(e),
         }
     }
 
-    pub async fn delete(&self, id: i32) -> i32 {
-        // TODO: unwrapせずにResult型で返す
-        let current_data: post::ActiveModel = post::Entity::find_by_id(id)
-            .one(self.conn.as_ref())
-            .await
-            .expect("fetch current post data")
-            .unwrap()
-            .into();
+    pub async fn update(&self, id: i32, input: PostInput) -> PostSaveResult {
+        let builder = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
+        match builder {
+            Ok(builder) => match builder
+                .title(input.title)
+                .user_id(input.user_id)
+                // TODO: before_saveフックに実装
+                .updated_at(Utc::now().naive_utc())
+                .build(self.conn.as_ref())
+                .await
+            {
+                Ok(build_res) => match build_res {
+                    Ok(model) => match model.update(self.conn.as_ref()).await {
+                        Ok(data) => Ok(Ok(Post { data })),
+                        Err(e) => Err(e),
+                    },
+                    Err(validation_err) => Ok(Err(validation_err)),
+                },
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
+    }
 
-        current_data
-            .delete(self.conn.as_ref())
-            .await
-            .expect("remove post data");
-
-        id
+    pub async fn delete(&self, id: i32) -> PostDeleteResult {
+        let builder = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
+        match builder {
+            Ok(builder) => match builder.build(self.conn.as_ref()).await {
+                Ok(build_res) => match build_res {
+                    Ok(model) => match model.delete(self.conn.as_ref()).await {
+                        Ok(_) => Ok(Ok(id)),
+                        Err(e) => Err(e),
+                    },
+                    Err(validation_err) => Ok(Err(validation_err)),
+                },
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
