@@ -57,10 +57,10 @@ impl Datasource {
 
         match build_res {
             Ok(build_res) => match build_res {
-                Ok(model) => match model.insert(self.conn.as_ref()).await {
-                    Ok(data) => Ok(Ok(data)),
-                    Err(e) => Err(e),
-                },
+                Ok(model) => model
+                    .insert(self.conn.as_ref())
+                    .await
+                    .and_then(|data| Ok(Ok(data))),
                 Err(validation_err) => Ok(Err(validation_err)),
             },
             Err(e) => Err(e),
