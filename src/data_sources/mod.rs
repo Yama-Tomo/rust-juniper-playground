@@ -3,6 +3,7 @@ mod post;
 mod user;
 
 pub use self::entities::public::*;
+pub use self::post::PostSaveResult;
 pub use self::user::{UserDeleteResult, UserSaveResult};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::env;
