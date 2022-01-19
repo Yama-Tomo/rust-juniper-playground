@@ -30,18 +30,14 @@ impl Datasource {
     }
 
     pub async fn get_all(&self) -> Result<Vec<User>, DbErr> {
-        let users = user::Entity::find().all(self.conn.as_ref()).await;
-        match users {
-            Ok(users) => {
-                let mut results: Vec<User> = vec![];
-                for item in users {
-                    results.push(item);
-                }
+        let users = user::Entity::find().all(self.conn.as_ref()).await?;
 
-                Ok(results)
-            }
-            Err(e) => Err(e),
+        let mut results: Vec<User> = vec![];
+        for item in users {
+            results.push(item);
         }
+
+        Ok(results)
     }
 
     pub async fn create(&self, input: UserInput) -> UserSaveResult {
@@ -50,56 +46,39 @@ impl Datasource {
             .name(input.name)
             .updated_at(now)
             .created_at(now)
-            .build();
+            .build()?;
 
         match build_res {
-            Ok(build_res) => match build_res {
-                Ok(model) => match model.insert(self.conn.as_ref()).await {
-                    Ok(data) => Ok(Ok(data)),
-                    Err(e) => Err(e),
-                },
-                Err(validation_err) => Ok(Err(validation_err)),
-            },
-            Err(e) => Err(e),
+            Ok(model) => Ok(Ok(model.insert(self.conn.as_ref()).await?)),
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 
     pub async fn update(&self, id: i32, input: UserInput) -> UserSaveResult {
-        let builder = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
-        match builder {
-            Ok(builder) => match builder
-                .name(input.name)
-                // TODO: before_saveフックに実装
-                .updated_at(Utc::now().naive_utc())
-                .build()
-            {
-                Ok(build_res) => match build_res {
-                    Ok(model) => match model.update(self.conn.as_ref()).await {
-                        Ok(data) => Ok(Ok(data)),
-                        Err(e) => Err(e),
-                    },
-                    Err(validation_err) => Ok(Err(validation_err)),
-                },
-                Err(e) => Err(e),
-            },
-            Err(e) => Err(e),
+        let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+            .await?
+            .name(input.name)
+            // TODO: before_saveフックに実装
+            .updated_at(Utc::now().naive_utc())
+            .build()?;
+
+        match build_res {
+            Ok(model) => Ok(Ok(model.update(self.conn.as_ref()).await?)),
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 
     pub async fn delete(&self, id: i32) -> UserDeleteResult {
-        let builder = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
-        match builder {
-            Ok(builder) => match builder.build() {
-                Ok(build_res) => match build_res {
-                    Ok(model) => match model.delete(self.conn.as_ref()).await {
-                        Ok(_) => Ok(Ok(id)),
-                        Err(e) => Err(e),
-                    },
-                    Err(validation_err) => Ok(Err(validation_err)),
-                },
-                Err(e) => Err(e),
-            },
-            Err(e) => Err(e),
+        let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+            .await?
+            .build()?;
+
+        match build_res {
+            Ok(model) => {
+                model.delete(self.conn.as_ref()).await?;
+                Ok(Ok(id))
+            }
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 }

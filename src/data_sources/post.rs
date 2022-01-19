@@ -30,19 +30,14 @@ impl Datasource {
     }
 
     pub async fn get_all(&self) -> Result<Vec<Post>, DbErr> {
-        let posts = post::Entity::find().all(self.conn.as_ref()).await;
+        let posts = post::Entity::find().all(self.conn.as_ref()).await?;
 
-        match posts {
-            Ok(posts) => {
-                let mut results: Vec<Post> = vec![];
-                for item in posts {
-                    results.push(item);
-                }
-
-                Ok(results)
-            }
-            Err(e) => Err(e),
+        let mut results: Vec<Post> = vec![];
+        for item in posts {
+            results.push(item);
         }
+
+        Ok(results)
     }
 
     pub async fn create(&self, input: PostInput) -> PostSaveResult {
@@ -62,43 +57,33 @@ impl Datasource {
     }
 
     pub async fn update(&self, id: i32, input: PostInput) -> PostSaveResult {
-        let builder = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
-        match builder {
-            Ok(builder) => match builder
-                .title(input.title)
-                .user_id(input.user_id)
-                // TODO: before_saveフックに実装
-                .updated_at(Utc::now().naive_utc())
-                .build(self.conn.as_ref())
-                .await
-            {
-                Ok(build_res) => match build_res {
-                    Ok(model) => match model.update(self.conn.as_ref()).await {
-                        Ok(data) => Ok(Ok(data)),
-                        Err(e) => Err(e),
-                    },
-                    Err(validation_err) => Ok(Err(validation_err)),
-                },
-                Err(e) => Err(e),
-            },
-            Err(e) => Err(e),
+        let build_res = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+            .await?
+            .title(input.title)
+            .user_id(input.user_id)
+            // TODO: before_saveフックに実装
+            .updated_at(Utc::now().naive_utc())
+            .build(self.conn.as_ref())
+            .await?;
+
+        match build_res {
+            Ok(model) => Ok(Ok(model.update(self.conn.as_ref()).await?)),
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 
     pub async fn delete(&self, id: i32) -> PostDeleteResult {
-        let builder = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
-        match builder {
-            Ok(builder) => match builder.build(self.conn.as_ref()).await {
-                Ok(build_res) => match build_res {
-                    Ok(model) => match model.delete(self.conn.as_ref()).await {
-                        Ok(_) => Ok(Ok(id)),
-                        Err(e) => Err(e),
-                    },
-                    Err(validation_err) => Ok(Err(validation_err)),
-                },
-                Err(e) => Err(e),
-            },
-            Err(e) => Err(e),
+        let build_res = post::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+            .await?
+            .build(self.conn.as_ref())
+            .await?;
+
+        match build_res {
+            Ok(model) => {
+                model.delete(self.conn.as_ref()).await?;
+                Ok(Ok(id))
+            }
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 }

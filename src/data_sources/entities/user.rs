@@ -45,23 +45,18 @@ impl ModelBuilder {
     }
 
     pub async fn from_exists_data(conn: &DatabaseConnection, id: i32) -> Result<Self, DbErr> {
-        let record = self::Entity::find_by_id(id).one(conn).await;
-        match record {
-            Ok(record) => {
-                let record = Arc::new(record);
-                Ok(ModelBuilder {
-                    model: match Arc::clone(&record).as_ref().to_owned() {
-                        Some(record) => record.into(),
-                        None => ActiveModel {
-                            ..Default::default()
-                        },
-                    },
-                    exists_model: Arc::clone(&record).as_ref().to_owned(),
-                    primary_keys: Some(id),
-                })
-            }
-            Err(e) => Err(e),
-        }
+        let record = Arc::new(self::Entity::find_by_id(id).one(conn).await?);
+
+        Ok(ModelBuilder {
+            model: match Arc::clone(&record).as_ref().to_owned() {
+                Some(record) => record.into(),
+                None => ActiveModel {
+                    ..Default::default()
+                },
+            },
+            exists_model: Arc::clone(&record).as_ref().to_owned(),
+            primary_keys: Some(id),
+        })
     }
 
     // TODO: コード生成する仕組みを作りたい
