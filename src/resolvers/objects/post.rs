@@ -1,9 +1,10 @@
-use juniper::{graphql_object, FieldResult, GraphQLInputObject};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, GraphQLUnion};
 
 use super::User;
 use crate::context::Context;
 use crate::data_sources::models;
 use crate::resolvers::errors::data_load_error;
+use crate::resolvers::objects::ValidationErrors;
 
 #[derive(Clone)]
 pub struct Post {
@@ -29,8 +30,27 @@ impl Post {
     }
 }
 
+#[derive(GraphQLObject)]
+pub struct DeletedPost {
+    pub id: i32,
+}
+
 #[derive(GraphQLInputObject)]
 pub struct PostInput {
     pub user_id: i32,
     pub title: String,
+}
+
+#[derive(GraphQLUnion)]
+#[graphql(Context = Context)]
+pub enum PostSaveMutationResult {
+    Ok(Post),
+    Err(ValidationErrors),
+}
+
+#[derive(GraphQLUnion)]
+#[graphql(Context = Context)]
+pub enum PostDeleteMutationResult {
+    Ok(DeletedPost),
+    Err(ValidationErrors),
 }
