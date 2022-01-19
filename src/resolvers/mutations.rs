@@ -66,7 +66,7 @@ impl Mutation {
 fn fmt_user_save_result(res: UserSaveResult) -> FieldResult<UserSaveMutationResult> {
     match res {
         Ok(res) => match res {
-            Ok(res) => Ok(UserSaveMutationResult::Ok(res)),
+            Ok(data) => Ok(UserSaveMutationResult::Ok(User { data })),
             Err(e) => Ok(UserSaveMutationResult::Err(to_graphql_validation_errors(e))),
         },
         Err(e) => Err(data_save_error(e)),
@@ -76,7 +76,7 @@ fn fmt_user_save_result(res: UserSaveResult) -> FieldResult<UserSaveMutationResu
 fn fmt_post_save_result(res: PostSaveResult) -> FieldResult<PostSaveMutationResult> {
     match res {
         Ok(res) => match res {
-            Ok(res) => Ok(PostSaveMutationResult::Ok(res)),
+            Ok(data) => Ok(PostSaveMutationResult::Ok(Post { data })),
             Err(e) => Ok(PostSaveMutationResult::Err(to_graphql_validation_errors(e))),
         },
         Err(e) => Err(data_save_error(e)),

@@ -4,7 +4,7 @@ use super::User;
 use crate::context::Context;
 use crate::data_sources::models;
 use crate::resolvers::errors::data_load_error;
-use crate::resolvers::objects::ValidationErrors;
+use crate::resolvers::objects::{to_optional_graphql_user, ValidationErrors};
 
 #[derive(Clone)]
 pub struct Post {
@@ -24,7 +24,7 @@ impl Post {
     async fn user(&self, context: &Context) -> FieldResult<Option<User>> {
         let user = context.datasources.user.get_by_id(self.data.user_id).await;
         match user {
-            Ok(user) => Ok(user),
+            Ok(user) => Ok(to_optional_graphql_user(user)),
             Err(e) => Err(data_load_error(e)),
         }
     }
@@ -53,4 +53,11 @@ pub enum PostSaveMutationResult {
 pub enum PostDeleteMutationResult {
     Ok(DeletedPost),
     Err(ValidationErrors),
+}
+
+pub fn to_graphql_posts(posts: Vec<models::Post>) -> Vec<Post> {
+    posts
+        .into_iter()
+        .map(|i| Post { data: i })
+        .collect::<Vec<Post>>()
 }

@@ -7,8 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::data_sources::entities::{errors, user};
-use crate::resolvers::objects::*;
+use crate::resolvers::objects::UserInput;
 
+type User = user::Model;
 pub type UserSaveResult = Result<Result<User, Vec<errors::ValidationError>>, DbErr>;
 pub type UserDeleteResult = Result<Result<i32, Vec<errors::ValidationError>>, DbErr>;
 
@@ -34,7 +35,7 @@ impl Datasource {
             Ok(users) => {
                 let mut results: Vec<User> = vec![];
                 for item in users {
-                    results.push(User { data: item });
+                    results.push(item);
                 }
 
                 Ok(results)
@@ -54,7 +55,7 @@ impl Datasource {
         match build_res {
             Ok(build_res) => match build_res {
                 Ok(model) => match model.insert(self.conn.as_ref()).await {
-                    Ok(data) => Ok(Ok(User { data })),
+                    Ok(data) => Ok(Ok(data)),
                     Err(e) => Err(e),
                 },
                 Err(validation_err) => Ok(Err(validation_err)),
@@ -74,7 +75,7 @@ impl Datasource {
             {
                 Ok(build_res) => match build_res {
                     Ok(model) => match model.update(self.conn.as_ref()).await {
-                        Ok(data) => Ok(Ok(User { data })),
+                        Ok(data) => Ok(Ok(data)),
                         Err(e) => Err(e),
                     },
                     Err(validation_err) => Ok(Err(validation_err)),
@@ -118,7 +119,7 @@ impl BatchFn<i32, Result<Option<User>, String>> for UserLoader {
             Ok(fetch_data) => {
                 let hashmap = fetch_data
                     .into_iter()
-                    .map(|user| (user.id, Ok(Some(User { data: user }))))
+                    .map(|user| (user.id, Ok(Some(user))))
                     .collect::<HashMap<i32, Result<Option<User>, String>>>();
 
                 keys.iter().fold(hashmap, |mut map, key| {

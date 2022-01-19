@@ -17,7 +17,7 @@ impl Query {
     ) -> FieldResult<Option<User>> {
         let user = context.datasources.user.get_by_id(id).await;
         match user {
-            Ok(user) => Ok(user),
+            Ok(user) => Ok(to_optional_graphql_user(user)),
             Err(e) => Err(data_load_error(e)),
         }
     }
@@ -25,7 +25,7 @@ impl Query {
     async fn users(context: &Context) -> FieldResult<Vec<User>> {
         let users = context.datasources.user.get_all().await;
         match users {
-            Ok(users) => Ok(users),
+            Ok(users) => Ok(to_graphql_users(users)),
             Err(e) => Err(data_load_error(e)),
         }
     }
@@ -33,7 +33,7 @@ impl Query {
     async fn posts(context: &Context) -> FieldResult<Vec<Post>> {
         let posts = context.datasources.post.get_all().await;
         match posts {
-            Ok(posts) => Ok(posts),
+            Ok(posts) => Ok(to_graphql_posts(posts)),
             Err(e) => Err(data_load_error(e)),
         }
     }

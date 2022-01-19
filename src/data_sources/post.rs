@@ -7,8 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::data_sources::entities::{errors, post};
-use crate::resolvers::objects::*;
+use crate::resolvers::objects::PostInput;
 
+type Post = post::Model;
 pub type PostSaveResult = Result<Result<Post, Vec<errors::ValidationError>>, DbErr>;
 pub type PostDeleteResult = Result<Result<i32, Vec<errors::ValidationError>>, DbErr>;
 
@@ -35,7 +36,7 @@ impl Datasource {
             Ok(posts) => {
                 let mut results: Vec<Post> = vec![];
                 for item in posts {
-                    results.push(Post { data: item });
+                    results.push(item);
                 }
 
                 Ok(results)
@@ -57,7 +58,7 @@ impl Datasource {
         match build_res {
             Ok(build_res) => match build_res {
                 Ok(model) => match model.insert(self.conn.as_ref()).await {
-                    Ok(data) => Ok(Ok(Post { data })),
+                    Ok(data) => Ok(Ok(data)),
                     Err(e) => Err(e),
                 },
                 Err(validation_err) => Ok(Err(validation_err)),
@@ -79,7 +80,7 @@ impl Datasource {
             {
                 Ok(build_res) => match build_res {
                     Ok(model) => match model.update(self.conn.as_ref()).await {
-                        Ok(data) => Ok(Ok(Post { data })),
+                        Ok(data) => Ok(Ok(data)),
                         Err(e) => Err(e),
                     },
                     Err(validation_err) => Ok(Err(validation_err)),
@@ -126,7 +127,7 @@ impl BatchFn<i32, Result<Vec<Post>, String>> for PostLoader {
                     let posts = fetch_data
                         .iter()
                         .filter(|&i| &i.user_id == key)
-                        .map(|i| Ok(Post { data: i.clone() }))
+                        .map(|i| Ok(i.clone()))
                         .collect::<Result<Vec<Post>, String>>();
 
                     hashmap.insert(*key, posts);
