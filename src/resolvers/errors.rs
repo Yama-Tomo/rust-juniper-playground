@@ -4,3 +4,7 @@ use std::fmt::Display;
 pub fn data_load_error<T: Display>(e: T) -> FieldError {
     FieldError::new(e, graphql_value!({ "code": "DATA_LOAD_ERROR" }))
 }
+
+pub fn data_save_error<T: Display>(e: T) -> FieldError {
+    FieldError::new(e, graphql_value!({ "code": "DATA_SAVE_ERROR" }))
+}

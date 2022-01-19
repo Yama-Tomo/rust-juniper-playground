@@ -1,9 +1,9 @@
-use juniper::{graphql_object, FieldResult, GraphQLInputObject};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, GraphQLUnion};
 
 use crate::context::Context;
 use crate::data_sources::models;
 use crate::resolvers::errors::data_load_error;
-use crate::resolvers::objects::Post;
+use crate::resolvers::objects::{Post, ValidationErrors};
 
 #[derive(Clone)]
 pub struct User {
@@ -29,8 +29,29 @@ impl User {
     }
 }
 
+#[derive(GraphQLObject)]
+pub struct DeletedUser {
+    pub id: i32,
+}
+
 #[derive(GraphQLInputObject)]
 pub struct UserInput {
     #[graphql(description = "name of the user")]
     pub name: String,
+}
+
+// TODO: genericsを使ってボイラープレートを減らしたい
+#[derive(GraphQLUnion)]
+#[graphql(Context = Context)]
+pub enum UserSaveMutationResult {
+    Ok(User),
+    Err(ValidationErrors),
+}
+
+// TODO: genericsを使ってボイラープレートを減らしたい
+#[derive(GraphQLUnion)]
+#[graphql(Context = Context)]
+pub enum UserDeleteMutationResult {
+    Ok(DeletedUser),
+    Err(ValidationErrors),
 }
