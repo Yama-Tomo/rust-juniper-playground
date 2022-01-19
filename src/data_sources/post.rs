@@ -57,7 +57,7 @@ impl Datasource {
 
         match build_res {
             Ok(build_res) => match build_res {
-                Ok(model) => model.insert(self.conn.as_ref()).await.map(|data| Ok(data)),
+                Ok(model) => model.insert(self.conn.as_ref()).await.map(Ok),
                 Err(validation_err) => Ok(Err(validation_err)),
             },
             Err(e) => Err(e),
