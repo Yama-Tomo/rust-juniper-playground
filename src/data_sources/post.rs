@@ -53,14 +53,11 @@ impl Datasource {
             .updated_at(now)
             .created_at(now)
             .build(self.conn.as_ref())
-            .await;
+            .await?;
 
         match build_res {
-            Ok(build_res) => match build_res {
-                Ok(model) => Ok(Ok(model.insert(self.conn.as_ref()).await?)),
-                Err(validation_err) => Ok(Err(validation_err)),
-            },
-            Err(e) => Err(e),
+            Ok(model) => Ok(Ok(model.insert(self.conn.as_ref()).await?)),
+            Err(validation_err) => Ok(Err(validation_err)),
         }
     }
 
