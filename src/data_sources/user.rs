@@ -2,15 +2,15 @@ use async_trait::async_trait;
 use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
-    QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::data_sources::entities::user;
+use crate::data_sources::entities::{errors, user};
 use crate::resolvers::objects::*;
+
+pub type UserSaveResult = Result<Result<User, Vec<errors::ValidationError>>, DbErr>;
+pub type UserDeleteResult = Result<Result<i32, Vec<errors::ValidationError>>, DbErr>;
 
 pub struct Datasource {
     conn: Arc<DatabaseConnection>,
@@ -43,55 +43,63 @@ impl Datasource {
         }
     }
 
-    pub async fn create(&self, input: UserInput) -> Option<User> {
+    pub async fn create(&self, input: UserInput) -> UserSaveResult {
         let now = Utc::now().naive_utc();
-        let data = user::ActiveModel {
-            name: Set(input.name),
-            created_at: Set(now),
-            updated_at: Set(now),
-            ..Default::default()
-        };
+        let build_res = user::ModelBuilder::new()
+            .name(input.name)
+            .updated_at(now)
+            .created_at(now)
+            .build();
 
-        // TODO: unwrapせずにResult型で返す
-        let res = data.insert(self.conn.as_ref()).await.unwrap();
-
-        Some(User { data: res })
-    }
-
-    pub async fn update(&self, id: i32, input: UserInput) -> User {
-        // TODO: unwrapせずにResult型で返す
-        let mut current_data: user::ActiveModel = user::Entity::find_by_id(id)
-            .one(self.conn.as_ref())
-            .await
-            .expect("fetch current user data")
-            .unwrap()
-            .into();
-
-        current_data.name = Set(input.name);
-        // TODO: before_saveフックに実装
-        current_data.updated_at = Set(Utc::now().naive_utc());
-        let updated = current_data.update(self.conn.as_ref()).await;
-
-        User {
-            data: updated.unwrap(),
+        match build_res {
+            Ok(build_res) => match build_res {
+                Ok(model) => match model.insert(self.conn.as_ref()).await {
+                    Ok(data) => Ok(Ok(User { data })),
+                    Err(e) => Err(e),
+                },
+                Err(validation_err) => Ok(Err(validation_err)),
+            },
+            Err(e) => Err(e),
         }
     }
 
-    pub async fn delete(&self, id: i32) -> i32 {
-        // TODO: unwrapせずにResult型で返す
-        let current_data: user::ActiveModel = user::Entity::find_by_id(id)
-            .one(self.conn.as_ref())
-            .await
-            .expect("fetch current user data")
-            .unwrap()
-            .into();
+    pub async fn update(&self, id: i32, input: UserInput) -> UserSaveResult {
+        let builder = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
+        match builder {
+            Ok(builder) => match builder
+                .name(input.name)
+                // TODO: before_saveフックに実装
+                .updated_at(Utc::now().naive_utc())
+                .build()
+            {
+                Ok(build_res) => match build_res {
+                    Ok(model) => match model.update(self.conn.as_ref()).await {
+                        Ok(data) => Ok(Ok(User { data })),
+                        Err(e) => Err(e),
+                    },
+                    Err(validation_err) => Ok(Err(validation_err)),
+                },
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
+    }
 
-        current_data
-            .delete(self.conn.as_ref())
-            .await
-            .expect("remove user data");
-
-        id
+    pub async fn delete(&self, id: i32) -> UserDeleteResult {
+        let builder = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id).await;
+        match builder {
+            Ok(builder) => match builder.build() {
+                Ok(build_res) => match build_res {
+                    Ok(model) => match model.delete(self.conn.as_ref()).await {
+                        Ok(_) => Ok(Ok(id)),
+                        Err(e) => Err(e),
+                    },
+                    Err(validation_err) => Ok(Err(validation_err)),
+                },
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
