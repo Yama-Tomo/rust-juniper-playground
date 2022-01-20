@@ -31,6 +31,21 @@ async fn graphql_route(
     graphql_handler(&schema, &context, req, payload).await
 }
 
+// TODO: テスト時のDBをどうするかを決めたらOption外す
+pub fn configure(cfg: &mut web::ServiceConfig, conn: Option<DatabaseConnection>) {
+    if let Some(conn) = conn {
+        cfg.app_data(Data::new(conn));
+    }
+
+    cfg.app_data(Data::new(schema::create()))
+        .route("/", web::get().to(index))
+        .service(
+            web::resource("/graphql")
+                .route(web::post().to(graphql_route))
+                .route(web::get().to(playground_route)),
+        );
+}
+
 pub async fn run() -> std::io::Result<()> {
     dotenv().ok();
 
@@ -41,18 +56,8 @@ pub async fn run() -> std::io::Result<()> {
 
     let conn = create_db_connection().await;
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(Data::new(schema::create()))
-            .app_data(Data::new(conn.clone()))
-            .route("/", web::get().to(index))
-            .service(
-                web::resource("/graphql")
-                    .route(web::post().to(graphql_route))
-                    .route(web::get().to(playground_route)),
-            )
-    })
-    .bind("0.0.0.0:8088")?
-    .run()
-    .await
+    HttpServer::new(move || App::new().configure(|cfg| configure(cfg, Some(conn.clone()))))
+        .bind("0.0.0.0:8088")?
+        .run()
+        .await
 }
