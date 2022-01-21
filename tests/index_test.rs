@@ -1,7 +1,7 @@
 use rust_juniper_playground::configure;
 
 #[actix_rt::test]
-async fn test_index_get() {
+async fn hello_worldとレスポンスすること() {
     use actix_web::{test, App};
     use std::str;
 
