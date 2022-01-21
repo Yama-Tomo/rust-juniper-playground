@@ -1,0 +1,59 @@
+---
+source: tests/graphql_tests/user_test.rs
+assertion_line: 27
+expression: "graphql_req(&app, req_body).await"
+
+---
+{
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "name": "Aron",
+        "posts": [
+          {
+            "id": 1,
+            "title": "Aron - post#1"
+          },
+          {
+            "id": 2,
+            "title": "Aron - post#2"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Bea",
+        "posts": [
+          {
+            "id": 3,
+            "title": "Bea - post#1"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "carl",
+        "posts": []
+      },
+      {
+        "id": 4,
+        "name": "Dora",
+        "posts": [
+          {
+            "id": 4,
+            "title": "Dora - post#1"
+          },
+          {
+            "id": 5,
+            "title": "Dora - post#2"
+          },
+          {
+            "id": 6,
+            "title": "Dora - post#3"
+          }
+        ]
+      }
+    ]
+  }
+}
