@@ -6,7 +6,7 @@ use dotenv::dotenv;
 use juniper_actix::{graphql_handler, playground_handler};
 use sea_orm::DatabaseConnection;
 
-use crate::data_sources::create_db_connection;
+pub use crate::data_sources::create_db_connection;
 
 mod context;
 mod data_sources;
