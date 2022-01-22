@@ -1,4 +1,4 @@
-#[path = "../test_utils/mod.rs"]
+#[path = "../../../test_utils/mod.rs"]
 mod test_utils;
 
 use insta::*;
