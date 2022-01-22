@@ -1,5 +1,5 @@
 ---
-source: tests/graphql_tests/user_test.rs
+source: tests/graphql/user_test.rs
 assertion_line: 47
 expression: "graphql_req(&app, req_body).await"
 
