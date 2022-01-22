@@ -1,0 +1,14 @@
+---
+source: tests/graphql/mutations/user/test.rs
+assertion_line: 44
+expression: "graphql_req(&app, req_body).await"
+
+---
+{
+  "data": {
+    "user": {
+      "id": 5,
+      "name": "John"
+    }
+  }
+}

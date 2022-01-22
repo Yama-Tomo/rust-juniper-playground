@@ -1,1 +1,2 @@
+mod mutations;
 mod queries;

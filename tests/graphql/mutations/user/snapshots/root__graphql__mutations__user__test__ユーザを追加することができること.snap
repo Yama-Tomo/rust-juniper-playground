@@ -1,0 +1,14 @@
+---
+source: tests/graphql/mutations/user/test.rs
+assertion_line: 32
+expression: res
+
+---
+{
+  "data": {
+    "addUser": {
+      "id": 5,
+      "name": "John"
+    }
+  }
+}
