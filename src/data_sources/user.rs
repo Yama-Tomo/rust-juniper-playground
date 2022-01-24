@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use dataloader::non_cached::Loader;
 use dataloader::BatchFn;
+use mockall_double::double;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -13,75 +14,86 @@ type User = user::Model;
 pub type UserSaveResult = Result<Result<User, Vec<errors::ValidationError>>, DbErr>;
 pub type UserDeleteResult = Result<Result<i32, Vec<errors::ValidationError>>, DbErr>;
 
-pub struct Datasource {
-    conn: Arc<DatabaseConnection>,
-    loader: BatchLoaderType,
-}
-impl Datasource {
-    pub fn new(conn: &Arc<DatabaseConnection>) -> Datasource {
-        Datasource {
-            conn: Arc::clone(conn),
-            loader: create_loader(Arc::clone(conn)),
-        }
+mod mockable {
+    use super::*;
+    #[cfg(test)]
+    use mockall::automock;
+
+    pub struct Datasource {
+        conn: Arc<DatabaseConnection>,
+        loader: BatchLoaderType,
     }
 
-    pub async fn get_by_id(&self, id: i32) -> Result<Option<User>, String> {
-        self.loader.load(id).await
-    }
-
-    pub async fn get_all(&self) -> Result<Vec<User>, DbErr> {
-        let users = user::Entity::find().all(self.conn.as_ref()).await?;
-
-        let mut results: Vec<User> = vec![];
-        for item in users {
-            results.push(item);
-        }
-
-        Ok(results)
-    }
-
-    pub async fn create(&self, input: UserInput) -> UserSaveResult {
-        let now = Utc::now().naive_utc();
-        let build_res = user::ModelBuilder::new()
-            .name(input.name)
-            .updated_at(now)
-            .created_at(now)
-            .build()?;
-
-        match build_res {
-            Ok(model) => Ok(Ok(model.insert(self.conn.as_ref()).await?)),
-            Err(validation_err) => Ok(Err(validation_err)),
-        }
-    }
-
-    pub async fn update(&self, id: i32, input: UserInput) -> UserSaveResult {
-        let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
-            .await?
-            .name(input.name)
-            // TODO: before_saveフックに実装
-            .updated_at(Utc::now().naive_utc())
-            .build()?;
-
-        match build_res {
-            Ok(model) => Ok(Ok(model.update(self.conn.as_ref()).await?)),
-            Err(validation_err) => Ok(Err(validation_err)),
-        }
-    }
-
-    pub async fn delete(&self, id: i32) -> UserDeleteResult {
-        let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
-            .await?
-            .build()?;
-
-        match build_res {
-            Ok(model) => {
-                model.delete(self.conn.as_ref()).await?;
-                Ok(Ok(id))
+    #[cfg_attr(test, automock)]
+    impl Datasource {
+        pub fn new(conn: &Arc<DatabaseConnection>) -> Datasource {
+            Datasource {
+                conn: Arc::clone(conn),
+                loader: create_loader(Arc::clone(conn)),
             }
-            Err(validation_err) => Ok(Err(validation_err)),
+        }
+
+        pub async fn get_by_id(&self, id: i32) -> Result<Option<User>, String> {
+            self.loader.load(id).await
+        }
+
+        pub async fn get_all(&self) -> Result<Vec<User>, DbErr> {
+            let users = user::Entity::find().all(self.conn.as_ref()).await?;
+
+            let mut results: Vec<User> = vec![];
+            for item in users {
+                results.push(item);
+            }
+
+            Ok(results)
+        }
+
+        pub async fn create(&self, input: UserInput) -> UserSaveResult {
+            let now = Utc::now().naive_utc();
+            let build_res = user::ModelBuilder::new()
+                .name(input.name)
+                .updated_at(now)
+                .created_at(now)
+                .build()?;
+
+            match build_res {
+                Ok(model) => Ok(Ok(model.insert(self.conn.as_ref()).await?)),
+                Err(validation_err) => Ok(Err(validation_err)),
+            }
+        }
+
+        pub async fn update(&self, id: i32, input: UserInput) -> UserSaveResult {
+            let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+                .await?
+                .name(input.name)
+                // TODO: before_saveフックに実装
+                .updated_at(Utc::now().naive_utc())
+                .build()?;
+
+            match build_res {
+                Ok(model) => Ok(Ok(model.update(self.conn.as_ref()).await?)),
+                Err(validation_err) => Ok(Err(validation_err)),
+            }
+        }
+
+        pub async fn delete(&self, id: i32) -> UserDeleteResult {
+            let build_res = user::ModelBuilder::from_exists_data(self.conn.as_ref(), id)
+                .await?
+                .build()?;
+
+            match build_res {
+                Ok(model) => {
+                    model.delete(self.conn.as_ref()).await?;
+                    Ok(Ok(id))
+                }
+                Err(validation_err) => Ok(Err(validation_err)),
+            }
         }
     }
 }
+
+#[double]
+pub use mockable::Datasource;
 
 struct UserLoader {
     conn: Arc<DatabaseConnection>,
