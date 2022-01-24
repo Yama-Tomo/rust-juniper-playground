@@ -26,8 +26,8 @@ mod mockable {
 
     #[cfg_attr(test, automock)]
     impl Datasource {
-        pub fn new(conn: &Arc<DatabaseConnection>) -> Datasource {
-            Datasource {
+        pub fn new(conn: &Arc<DatabaseConnection>) -> Self {
+            Self {
                 conn: Arc::clone(conn),
                 loader: create_loader(Arc::clone(conn)),
             }
