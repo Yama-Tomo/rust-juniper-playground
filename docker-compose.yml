@@ -20,6 +20,15 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     volumes:
       - mysql_vol:/var/lib/mysql
+# 本番ビルドを試したい場合は、以下のコメントを docker-compose.override.yml にコピーして実行
+#  graphql_prod:
+#    build:
+#      context: .
+#      dockerfile: docker/graphql_prod/Dockerfile
+#    environment:
+#      - DATABASE_URL=${DATABASE_URL}
+#    ports:
+#      - "8089:8080"
 
 volumes:
   cargo_target_vol:
