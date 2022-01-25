@@ -49,8 +49,13 @@ pub fn configure(cfg: &mut web::ServiceConfig, conn: Option<DatabaseConnection>)
 pub async fn run() -> std::io::Result<()> {
     dotenv().ok();
 
+    let trace_level = if cfg!(debug_assertions) {
+        tracing::Level::DEBUG
+    } else {
+        tracing::Level::WARN
+    };
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(trace_level)
         .with_test_writer()
         .init();
 
