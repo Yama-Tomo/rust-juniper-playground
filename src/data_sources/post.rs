@@ -99,6 +99,8 @@ mod mockable {
 
 #[double]
 pub use mockable::Datasource;
+#[cfg(test)]
+pub use mockable::MockDatasource;
 
 struct PostLoader {
     conn: Arc<DatabaseConnection>,
