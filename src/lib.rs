@@ -5,6 +5,7 @@ use actix_web::{
 use dotenv::dotenv;
 use juniper_actix::{graphql_handler, playground_handler};
 use sea_orm::DatabaseConnection;
+use std::env;
 
 pub use crate::data_sources::create_db_connection;
 
@@ -60,9 +61,10 @@ pub async fn run() -> std::io::Result<()> {
         .init();
 
     let conn = create_db_connection().await;
+    let port = env::var("PORT").unwrap_or_else(|_| "8088".to_string());
 
     HttpServer::new(move || App::new().configure(|cfg| configure(cfg, Some(conn.clone()))))
-        .bind("0.0.0.0:8088")?
+        .bind(format!("0.0.0.0:{}", port))?
         .run()
         .await
 }
