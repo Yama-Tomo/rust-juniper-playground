@@ -2,6 +2,7 @@ use actix_web::{
     web::{self, Data},
     App, Error, HttpResponse, HttpServer, Responder,
 };
+#[cfg(debug_assertions)]
 use dotenv::dotenv;
 use juniper_actix::{graphql_handler, playground_handler};
 use sea_orm::DatabaseConnection;
@@ -48,6 +49,7 @@ pub fn configure(cfg: &mut web::ServiceConfig, conn: Option<DatabaseConnection>)
 }
 
 pub async fn run() -> std::io::Result<()> {
+    #[cfg(debug_assertions)]
     dotenv().ok();
 
     let trace_level = if cfg!(debug_assertions) {
