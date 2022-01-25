@@ -6,7 +6,7 @@ use crate::data_sources::models;
 use crate::resolvers::errors::data_load_error;
 use crate::resolvers::objects::{to_optional_graphql_user, ValidationErrors};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Post {
     pub data: models::Post,
 }
