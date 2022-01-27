@@ -19,8 +19,7 @@ runs:
     #        chmod +x ~/.local/bin/sccache
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
-        profile: minimal
+        components: rustfmt, clippy
     - uses: Swatinem/rust-cache@v1
       # rustflagsの指定ごとにキャッシュしないとキャッシュヒットしないのでプロダクションビルド用とkeyを分けて指定することに注意
       with:
