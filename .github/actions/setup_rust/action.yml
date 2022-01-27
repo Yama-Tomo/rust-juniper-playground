@@ -1,5 +1,10 @@
 name: setup_rust
 description: setup rust
+inputs:
+  rust_components:
+    description: components
+    default: ''
+    required: false
 
 runs:
   using: composite
@@ -14,7 +19,7 @@ runs:
     #        chmod +x ~/.local/bin/sccache
     - uses: actions-rs/toolchain@v1
       with:
-        components: rustfmt, clippy
+        components: ${{ inputs.rust_components }}
     - uses: Swatinem/rust-cache@v1
       with:
         key: 220127-1
