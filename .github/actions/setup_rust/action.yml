@@ -1,5 +1,10 @@
 name: setup_rust
 description: setup rust
+inputs:
+  is_prod_build:
+    description: プロダクションビルドであれば'true'それ以外は'false'
+    default: 'false'
+    required: false
 
 runs:
   using: composite
@@ -19,7 +24,7 @@ runs:
     - uses: Swatinem/rust-cache@v1
       # rustflagsの指定ごとにキャッシュしないとキャッシュヒットしないのでプロダクションビルド用とkeyを分けて指定することに注意
       with:
-        key: test-220127
+        key: ${{ (inputs.is_prod_build == 'false' && 'test-220127') || 'prod-220127' }}
     #    - uses: actions/cache@v2
     #      with:
     #        path: /home/runner/.cache/sccache
