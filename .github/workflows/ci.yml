@@ -28,28 +28,7 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
     steps:
     - uses: actions/checkout@v2
-#    - name: install sccache
-#      run: |
-#        echo $PATH
-#        version=v0.2.15
-#        curl -L https://github.com/mozilla/sccache/releases/download/${version}/sccache-${version}-x86_64-unknown-linux-musl.tar.gz | tar xz
-#        mkdir -p ~/.local/bin
-#        cp ./*/sccache ~/.local/bin/
-#        chmod +x ~/.local/bin/sccache
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-    - uses: Swatinem/rust-cache@v1
-      # rustflagsの指定ごとにキャッシュしないとキャッシュヒットしないのでプロダクションビルド用とkeyを分けて指定することに注意
-      with:
-        key: test-220127
-#    - uses: actions/cache@v2
-#      with:
-#        path: /home/runner/.cache/sccache
-#        key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-#        restore-keys: |
-#          ${{ runner.os }}-sccache-
+    - uses: ./.github/actions/setup_rust
     - name: install required tools
       run: cargo install sqlx-cli
     - name: create .env
