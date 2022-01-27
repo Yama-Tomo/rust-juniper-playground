@@ -11,7 +11,6 @@ env:
   CI: 1
   RUST_BACKTRACE: short
   RUSTUP_MAX_RETRIES: 10
-  RUSTFLAGS: -A dead_code -A unused_mut
 #  RUSTC_WRAPPER: sccache
 #  SCCACHE_CACHE_SIZE: 1G
 #  SCCACHE_DIR: /home/runner/.cache/sccache
@@ -26,9 +25,13 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
+    env:
+      RUSTFLAGS: -A dead_code -A unused_mut
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/setup_rust
+      with:
+        is_suppress_warn: 'true'
     - name: install required tools
       run: cargo install sqlx-cli
     - name: create .env
