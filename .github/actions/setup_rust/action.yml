@@ -1,10 +1,5 @@
 name: setup_rust
 description: setup rust
-inputs:
-  is_suppress_warn:
-    description: コンパイル時のwarningを抑止するかどうか
-    default: 'false'
-    required: false
 
 runs:
   using: composite
@@ -21,9 +16,8 @@ runs:
       with:
         components: rustfmt, clippy
     - uses: Swatinem/rust-cache@v1
-      # rustflagsの指定ごとにキャッシュしないとキャッシュヒットしないのでプロダクションビルド用とkeyを分けて指定することに注意
       with:
-        key: ${{ (inputs.is_suppress_warn == 'true' && 'suppress-warn-220127') || '220127' }}
+        key: 220127-1
     #    - uses: actions/cache@v2
     #      with:
     #        path: /home/runner/.cache/sccache

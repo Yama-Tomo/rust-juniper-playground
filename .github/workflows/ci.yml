@@ -30,8 +30,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/setup_rust
-      with:
-        is_suppress_warn: 'true'
     - name: install required tools
       run: cargo install sqlx-cli
     - name: create .env
