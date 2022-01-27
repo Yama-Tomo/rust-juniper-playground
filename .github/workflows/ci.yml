@@ -1,0 +1,61 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CI: 1
+  RUST_BACKTRACE: short
+  RUSTUP_MAX_RETRIES: 10
+#  RUSTC_WRAPPER: sccache
+#  SCCACHE_CACHE_SIZE: 1G
+#  SCCACHE_DIR: /home/runner/.cache/sccache
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+    env:
+      RUSTFLAGS: -A dead_code -A unused_mut
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/setup_rust
+    - name: install required tools
+      run: cargo install sqlx-cli
+    - name: create .env
+      run: |
+        echo "TEST_DATABASE_URL=mysql://root@localhost/playground_test_%PARALLELISM_SUFFIX%" >> .env
+    - name: compile
+      run: cargo test --no-run --locked
+    - name: test
+      run: cargo test -- --nocapture --quiet
+#    - name: sccache stats & stop
+#      run: |
+#        sccache --show-stats
+#        sccache --stop-server || true
+  code-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/setup_rust
+      with:
+        rust_components: rustfmt
+    - run: cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/setup_rust
+      with:
+        rust_components: clippy
+    - run: cargo clippy -- -D warnings
