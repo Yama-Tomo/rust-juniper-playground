@@ -42,3 +42,15 @@ jobs:
 #      run: |
 #        sccache --show-stats
 #        sccache --stop-server || true
+  code-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/setup_rust
+    - run: cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/setup_rust
+    - run: cargo clippy -- -D warnings
